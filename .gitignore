@@ -1,0 +1,8 @@
+.worktrees/
+.superpowers/
+node_modules/
+dist/
+target/
+.env
+.env.*
+!.env.example
