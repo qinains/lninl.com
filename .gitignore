@@ -6,3 +6,6 @@ target/
 .env
 .env.*
 !.env.example
+web/.astro/
+web/test-results/
+web/playwright-report/

@@ -1,4 +1,5 @@
 ---
 import Site from '../../layouts/Site.astro';
+import Workspace from '../../components/Workspace.svelte';
 ---
-<Site locale="en" canonical="https://lninl.com/app/" alternate="https://lninl.com/zh/app/" title="Your Agent | lninl" description="Your private Personal AI Agent workspace" noindex><main class="app-placeholder"><p class="eyebrow">PERSONAL WORKSPACE</p><h1>Your agent starts here.</h1></main></Site>
+<Site locale="en" canonical="https://lninl.com/app/" alternate="https://lninl.com/zh/app/" title="Your Agent | lninl" description="Your private Personal AI Agent workspace" noindex><Workspace locale="en" client:load /></Site>
