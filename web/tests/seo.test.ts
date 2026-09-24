@@ -37,4 +37,11 @@ describe('indexable public pages', () => {
     expect(sitemap).toContain('https://lninl.com/guide/personal-ai-agent/');
     expect(sitemap).not.toContain('/app/');
   });
+
+  it('lets crawlers read workspace noindex rather than blocking the page in robots.txt', () => {
+    const robots = page('robots.txt');
+    expect(robots).not.toMatch(/Disallow:\s*\/(?:zh\/)?app\//);
+    expect(page('app/index.html')).toContain('name="robots" content="noindex"');
+    expect(page('zh/app/index.html')).toContain('name="robots" content="noindex"');
+  });
 });

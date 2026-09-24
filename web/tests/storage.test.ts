@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentData } from '../src/lib/domain';
 import { clearData, exportData, loadData, parseImport, saveData } from '../src/lib/storage';
 
@@ -35,5 +35,19 @@ describe('local agent data', () => {
     expect(() => parseImport(JSON.stringify({ ...fixture, tasks: [{ ...fixture.tasks[0], createdAt: 'yesterday' }] }))).toThrow();
     expect(() => parseImport(JSON.stringify({ ...fixture, apiKey: 'secret' }))).toThrow();
     expect(() => parseImport(' '.repeat(2_000_001))).toThrow();
+  });
+
+  it('does not report a write complete before its IndexedDB transaction commits', async () => {
+    let committed = false;
+    const original = IDBDatabase.prototype.transaction;
+    const spy = vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementation(function (this: IDBDatabase, storeNames, mode, options) {
+      const tx = original.call(this, storeNames, mode, options);
+      if (mode === 'readwrite') tx.addEventListener('complete', () => { committed = true; });
+      return tx;
+    });
+    try {
+      await saveData(fixture);
+      expect(committed).toBe(true);
+    } finally { spy.mockRestore(); }
   });
 });

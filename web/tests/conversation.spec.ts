@@ -54,3 +54,16 @@ test('timeout retries and proposals require approval', async ({ page }) => {
   await expect(page.getByText('Here is advice.')).toBeVisible();
   await expect(page.getByLabel('OpenAI API Key')).toHaveValue('');
 });
+
+test('a local storage failure keeps the unsaved message for retry', async ({ page }) => {
+  await onboard(page);
+  await page.route('**/api/chat', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{"text":"A useful answer","proposals":[]}' }));
+  await page.evaluate(() => {
+    IDBObjectStore.prototype.put = function () { throw new DOMException('Storage full', 'QuotaExceededError'); };
+  });
+  await page.getByLabel('OpenAI API Key').fill('sk-test-secret');
+  await page.getByLabel('Your message').fill('Help me plan');
+  await page.getByRole('button', { name: 'Send' }).click();
+  await expect(page.getByRole('alert').first()).toContainText(/save/i);
+  await expect(page.getByLabel('Your message')).toHaveValue('Help me plan');
+});

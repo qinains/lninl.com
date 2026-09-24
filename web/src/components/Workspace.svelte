@@ -23,8 +23,14 @@
     catch { error = zh ? '无法读取本地数据。请检查浏览器存储设置。' : 'Could not read local data. Check browser storage settings.'; }
   });
 
+  async function persist(updated: AgentData) {
+    await saveData(updated);
+    data = updated;
+    error = '';
+  }
+
   async function commit(updated: AgentData) {
-    try { await saveData(updated); data = updated; error = ''; }
+    try { await persist(updated); }
     catch { error = zh ? '保存失败。请检查浏览器存储空间。' : 'Save failed. Check browser storage space.'; }
   }
 
@@ -60,7 +66,7 @@
         <div class="overview-grid"><button onclick={() => tab = 'chat'} class="overview-card overview-primary"><span>✳</span><h2>{zh ? '和 Agent 聊聊' : 'Talk with your agent'}</h2><p>{zh ? '带着你的背景和目标，一起思考下一步。' : 'Think through your next step with your context in mind.'}</p><b aria-hidden="true">↗</b></button><button onclick={() => tab = 'memories'} class="overview-card"><span>◇</span><h2>{zh ? '记忆' : 'Memories'}</h2><p>{zh ? `${data.memories.length} 条由你管理的记忆` : `${data.memories.length} memories you control`}</p><b aria-hidden="true">↗</b></button><button onclick={() => tab = 'tasks'} class="overview-card"><span>✓</span><h2>{zh ? '待办' : 'Tasks'}</h2><p>{zh ? `${data.tasks.filter(task => !task.completed).length} 件待完成的事` : `${data.tasks.filter(task => !task.completed).length} open tasks`}</p><b aria-hidden="true">↗</b></button></div>
         <div class="goals-panel"><p class="workspace-kicker">{zh ? '当前目标' : 'CURRENT GOALS'}</p>{#if data.profile.goals.length}{#each data.profile.goals as goal}<div class="goal-row"><span>◎</span>{goal}</div>{/each}{:else}<p class="subtle">{zh ? '在个人档案中添加目标。' : 'Add your goals in My context.'}</p>{/if}</div>
       {:else if tab === 'chat'}
-        <Conversation {locale} {data} {apiKey} onKeyChange={setApiKey} onSave={commit} />
+        <Conversation {locale} {data} {apiKey} onKeyChange={setApiKey} onSave={persist} />
       {:else if tab === 'profile'}
         <ProfileEditor {locale} {data} onSave={commit} />
       {:else if tab === 'memories'}

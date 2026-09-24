@@ -1,6 +1,3 @@
 User-agent: *
 Allow: /
-Disallow: /app/
-Disallow: /zh/app/
-
 Sitemap: https://lninl.com/sitemap-index.xml

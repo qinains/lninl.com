@@ -56,6 +56,23 @@ fn client_ip(headers: &HeaderMap, peer: Option<SocketAddr>) -> String {
     peer.ip().to_string()
 }
 
+fn allow_request(requests: &mut HashMap<String, (Instant, u32)>, ip: String, now: Instant) -> bool {
+    if requests.len() >= 4096 {
+        requests.retain(|_, (start, _)| {
+            now.saturating_duration_since(*start) < Duration::from_secs(60)
+        });
+    }
+    let entry = requests.entry(ip).or_insert((now, 0));
+    if now.saturating_duration_since(entry.0) >= Duration::from_secs(60) {
+        *entry = (now, 0);
+    }
+    if entry.1 >= 30 {
+        return false;
+    }
+    entry.1 += 1;
+    true
+}
+
 async fn chat(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
@@ -88,17 +105,12 @@ async fn chat(
                 Json(json!({"error":"internal"})),
             )
         })?;
-        let entry = requests.entry(ip).or_insert((Instant::now(), 0));
-        if entry.0.elapsed() >= Duration::from_secs(60) {
-            *entry = (Instant::now(), 0);
-        }
-        if entry.1 >= 30 {
+        if !allow_request(&mut requests, ip, Instant::now()) {
             return Err((
                 StatusCode::TOO_MANY_REQUESTS,
                 Json(json!({"error":"rate_limited"})),
             ));
         }
-        entry.1 += 1;
     }
     let _permit = state
         .concurrent
@@ -137,4 +149,23 @@ async fn chat(
         (status, Json(json!({"error":code})))
     })?;
     Ok(Json(result))
+}
+
+#[cfg(test)]
+mod rate_limit_tests {
+    use super::*;
+
+    #[test]
+    fn old_ip_entries_are_pruned_when_the_table_grows() {
+        let now = Instant::now();
+        let mut requests = HashMap::new();
+        for index in 0..4096 {
+            requests.insert(format!("old-{index}"), (now - Duration::from_secs(61), 1));
+        }
+        requests.insert("recent".into(), (now, 1));
+        assert!(allow_request(&mut requests, "new".into(), now));
+        assert_eq!(requests.len(), 2);
+        assert!(requests.contains_key("recent"));
+        assert!(requests.contains_key("new"));
+    }
 }

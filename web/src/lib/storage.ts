@@ -79,9 +79,12 @@ async function record<T>(mode: IDBTransactionMode, work: (store: IDBObjectStore)
     return await new Promise<T>((resolve, reject) => {
       const tx = db.transaction(STORE, mode);
       const request = work(tx.objectStore(STORE));
-      request.onsuccess = () => resolve(request.result);
+      let result: T;
+      request.onsuccess = () => { result = request.result; };
       request.onerror = () => reject(request.error);
       tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+      tx.oncomplete = () => resolve(result);
     });
   } finally { db.close(); }
 }

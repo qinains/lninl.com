@@ -25,6 +25,7 @@
       rate_limited: ['Too many requests. Please try again later.', '请求过于频繁，请稍后再试。'],
       malformed_response: ['The model returned an invalid response. Please retry.', '模型返回无效内容，请重试。'],
       network_error: ['Network unavailable. Check your connection and retry.', '网络不可用，请检查连接后重试。'],
+      storage_error: ['Could not save your response. Check browser storage and retry.', '无法保存回答，请检查浏览器存储空间后重试。'],
       server_error: ['The model service is temporarily unavailable. Please retry.', '模型服务暂不可用，请重试。'],
     };
     const pair = messages[code] || messages.server_error;
@@ -46,7 +47,8 @@
         { id: crypto.randomUUID(), role: 'user', content: prompt, createdAt: now },
         { id: crypto.randomUUID(), role: 'assistant', content: result.text, createdAt: now },
       ];
-      await onSave({ ...data, conversation: [...data.conversation, ...turns].slice(-1000) });
+      try { await onSave({ ...data, conversation: [...data.conversation, ...turns].slice(-1000) }); }
+      catch { throw new ChatError('storage_error'); }
       draft = '';
       const valid: TaskProposal[] = [];
       for (const raw of result.proposals) {
@@ -60,13 +62,17 @@
   }
 
   async function approve(proposal: TaskProposal) {
+    let updated: AgentData;
     try {
-      await onSave(applyProposal(data, proposal));
-      proposals = proposals.filter(item => item.id !== proposal.id);
-      notice = zh ? '已批准并更新待办。' : 'Approved and updated your tasks.';
+      updated = applyProposal(data, proposal);
     } catch {
       error = zh ? '待办已变化，请重新请求建议。' : 'Your tasks changed. Ask for a fresh suggestion.';
+      return;
     }
+    try { await onSave(updated); }
+    catch { error = messageFor('storage_error'); return; }
+    proposals = proposals.filter(item => item.id !== proposal.id);
+    notice = zh ? '已批准并更新待办。' : 'Approved and updated your tasks.';
   }
   function reject(proposal: TaskProposal) { proposals = proposals.filter(item => item.id !== proposal.id); }
 </script>
