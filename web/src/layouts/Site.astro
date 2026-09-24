@@ -1,0 +1,60 @@
+---
+import '../styles/global.css';
+import { getCopy, type Locale } from '../content';
+
+interface Props {
+  locale: Locale;
+  canonical: string;
+  alternate: string;
+  title: string;
+  description: string;
+  noindex?: boolean;
+}
+
+const { locale, canonical, alternate, title, description, noindex = false } = Astro.props;
+const copy = getCopy(locale);
+const home = locale === 'zh' ? '/zh/' : '/';
+const guide = locale === 'zh' ? '/zh/guide/personal-ai-agent/' : '/guide/personal-ai-agent/';
+const app = locale === 'zh' ? '/zh/app/' : '/app/';
+const enUrl = locale === 'en' ? canonical : alternate;
+const zhUrl = locale === 'zh' ? canonical : alternate;
+---
+
+<!doctype html>
+<html lang={locale === 'zh' ? 'zh-CN' : 'en'}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f8f7f3" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="zh" href={zhUrl} />
+    <link rel="alternate" hreflang="x-default" href={enUrl} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-header">
+        <a class="brand" href={home} aria-label="lninl home"><span class="brand-mark">l<span>.</span></span><span>lninl</span></a>
+        <nav class="site-nav" aria-label={locale === 'zh' ? '主导航' : 'Main navigation'}>
+          <a href={home + '#idea'}>{copy.navHow}</a>
+          <a href={guide}>{copy.navGuide}</a>
+          <a href={home + '#privacy'}>{copy.navPrivacy}</a>
+        </nav>
+        <div class="header-actions">
+          <a class="language-link" href={new URL(alternate).pathname} lang={locale === 'zh' ? 'en' : 'zh-CN'}>{copy.switchLanguage}</a>
+          <a class="button button-small" href={app}>{copy.cta} <span aria-hidden="true">↗</span></a>
+        </div>
+      </header>
+      <slot />
+      <footer class="site-footer">
+        <span class="footer-brand">lninl<span class="accent">.</span></span>
+        <span>{copy.footer}</span>
+        <span>© {new Date().getFullYear()} lninl</span>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+---
+import Site from '../layouts/Site.astro';
+import { getCopy, type Locale } from '../content';
+
+const { locale } = Astro.props as { locale: Locale };
+const c = getCopy(locale);
+const isZh = locale === 'zh';
+const canonical = `https://lninl.com/${isZh ? 'zh/' : ''}guide/personal-ai-agent/`;
+const alternate = `https://lninl.com/${isZh ? '' : 'zh/'}guide/personal-ai-agent/`;
+const app = isZh ? '/zh/app/' : '/app/';
+---
+
+<Site locale={locale} canonical={canonical} alternate={alternate} title={`${c.guideTitle} | lninl`} description={c.guideLead}>
+  <main class="guide-page"><header class="guide-hero"><p class="eyebrow">THE FIELD GUIDE / 001</p><h1>{c.guideTitle}</h1><p>{c.guideLead}</p></header><div class="guide-layout"><aside><span>{isZh ? '本页内容' : 'ON THIS PAGE'}</span>{c.guideSections.map(([title], index) => <a href={`#section-${index + 1}`}>{String(index + 1).padStart(2, '0')} / {title}</a>)}</aside><div class="guide-body">{c.guideSections.map(([title, body], index) => <section id={`section-${index + 1}`}><span class="guide-number">{String(index + 1).padStart(2, '0')}</span><h2>{title}</h2><p>{body}</p></section>)}<div class="guide-cta"><h2>{isZh ? '准备好创建你的 Agent 了吗？' : 'Ready to make it personal?'}</h2><a class="button" href={app}>{c.cta}<span aria-hidden="true">↗</span></a></div></div></div></main>
+</Site>

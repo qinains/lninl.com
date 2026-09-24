@@ -1,0 +1,51 @@
+---
+import Site from '../layouts/Site.astro';
+import { getCopy, type Locale } from '../content';
+
+const { locale } = Astro.props as { locale: Locale };
+const c = getCopy(locale);
+const isZh = locale === 'zh';
+const home = isZh ? 'https://lninl.com/zh/' : 'https://lninl.com/';
+const alternate = isZh ? 'https://lninl.com/' : 'https://lninl.com/zh/';
+const app = isZh ? '/zh/app/' : '/app/';
+const guide = isZh ? '/zh/guide/personal-ai-agent/' : '/guide/personal-ai-agent/';
+---
+
+<Site locale={locale} canonical={home} alternate={alternate} title={c.title} description={c.intro}>
+  <main>
+    <section class="hero section-grid">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span>{c.eyebrow}</p>
+        <h1>{c.hero}</h1>
+        <p class="hero-description">{c.intro}</p>
+        <div class="hero-actions"><a class="button" href={app}>{c.cta}<span aria-hidden="true">↗</span></a><a class="text-link" href={guide}>{c.learn} <span aria-hidden="true">→</span></a></div>
+        <div class="hero-note"><span class="tiny-star">✳</span>{isZh ? '无账号 · 本地保存 · 行动由你确认' : 'No account · Local data · Your approval first'}</div>
+      </div>
+      <div class="hero-visual" aria-label={isZh ? '个人 Agent 工作台预览' : 'Personal agent workspace preview'}>
+        <div class="visual-grid"></div>
+        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+        <div class="visual-core"><span class="core-letter">you</span><span class="core-glow"></span></div>
+        <div class="float-card card-goal"><span class="card-icon">◎</span><span><small>{isZh ? '你的目标' : 'YOUR GOAL'}</small><strong>{isZh ? '持续写作' : 'Write consistently'}</strong></span></div>
+        <div class="float-card card-memory"><span class="card-icon">✳</span><span><small>{isZh ? '你的记忆' : 'YOUR MEMORY'}</small><strong>{isZh ? '简洁、具体的建议' : 'Concise, concrete advice'}</strong></span></div>
+        <div class="float-card card-action"><span class="card-icon">✓</span><span><small>{isZh ? '由你决定' : 'YOUR APPROVAL'}</small><strong>{isZh ? '确认下一步' : 'Approve the next step'}</strong></span></div>
+      </div>
+    </section>
+
+    <section id="idea" class="section features-section">
+      <div class="section-heading"><p class="eyebrow">01 / {isZh ? '理念' : 'THE IDEA'}</p><h2>{c.personal}</h2><p>{c.personalText}</p></div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-number">01</span><div class="feature-symbol">◌</div><h3>{c.personal}</h3><p>{c.personalText}</p></article>
+        <article class="feature-card"><span class="feature-number">02</span><div class="feature-symbol">✳</div><h3>{c.memory}</h3><p>{c.memoryText}</p></article>
+        <article class="feature-card"><span class="feature-number">03</span><div class="feature-symbol">↗</div><h3>{c.action}</h3><p>{c.actionText}</p></article>
+      </div>
+    </section>
+
+    <section class="section use-section"><div class="section-heading"><p class="eyebrow">02 / {isZh ? '使用场景' : 'POSSIBILITIES'}</p><h2>{c.useCasesTitle}</h2></div><div class="use-list">{c.useCases.map(([title, text], i) => <article class="use-row"><span>0{i + 1}</span><h3>{title}</h3><p>{text}</p><span class="row-arrow" aria-hidden="true">↗</span></article>)}</div></section>
+
+    <section id="privacy" class="section privacy-section"><div class="privacy-art"><span>YOUR<br />AGENT<br /><em>YOUR RULES</em></span><div class="privacy-ring"></div></div><div><p class="eyebrow">03 / {isZh ? '掌控权' : 'CONTROL'}</p><h2>{c.privacy}</h2><p>{c.privacyText}</p><a class="text-link" href={guide}>{c.learn} <span aria-hidden="true">→</span></a></div></section>
+
+    <section class="section faq-section"><div class="section-heading"><p class="eyebrow">04 / FAQ</p><h2>{c.faqTitle}</h2></div><div class="faq-list">{c.faqs.map(([question, answer]) => <details><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}</div></section>
+
+    <section class="closing-section"><p class="eyebrow">{isZh ? '从你开始' : 'START WITH YOU'}</p><h2>{isZh ? '为自己，创建一个真正了解你的 Agent。' : 'Make space for an agent that knows what matters to you.'}</h2><a class="button button-light" href={app}>{c.cta}<span aria-hidden="true">↗</span></a></section>
+  </main>
+</Site>
