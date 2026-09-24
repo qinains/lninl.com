@@ -1,0 +1,23 @@
+[Unit]
+Description=lninl Personal AI Agent API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=personal-agent
+Group=personal-agent
+WorkingDirectory=/srv/personal-agent/current
+Environment=PORT=8787
+Environment=OPENAI_MODEL=gpt-5-mini
+ExecStart=/srv/personal-agent/current/api/personal-agent-api
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target
