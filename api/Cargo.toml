@@ -1,0 +1,17 @@
+[package]
+name = "personal-agent-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+async-trait = "0.1"
+tower = { version = "0.5", features = ["util", "limit"] }
+http-body-util = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
