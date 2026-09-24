@@ -8,7 +8,7 @@ Type=simple
 User=personal-agent
 Group=personal-agent
 WorkingDirectory=/srv/personal-agent/current
-Environment=PORT=8787
+Environment=PORT=18787
 Environment=OPENAI_MODEL=gpt-5-mini
 ExecStart=/srv/personal-agent/current/api/personal-agent-api
 Restart=on-failure
