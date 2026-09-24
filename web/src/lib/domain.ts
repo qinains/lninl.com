@@ -11,3 +11,9 @@ export interface AgentData {
   tasks: Task[];
   conversation: ConversationTurn[];
 }
+
+export type TaskProposal =
+  | { id: string; kind: 'create'; taskId: string; title: string; notes: string }
+  | { id: string; kind: 'update'; taskId: string; title?: string; notes?: string }
+  | { id: string; kind: 'complete'; taskId: string }
+  | { id: string; kind: 'delete'; taskId: string };
