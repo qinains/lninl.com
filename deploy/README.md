@@ -34,4 +34,12 @@ Initial release, 2026-09-25 (Asia/Shanghai):
 - `deploy/smoke.sh`: all six checks passed. Production browser tests with a mocked model endpoint: 4/4 passed. Live `/api/chat` returned 401 without a key and 400 for invalid JSON with a dummy key; the dummy key did not appear in the Caddy access log.
 - A real OpenAI call was not run because no model API key was provided. This remains a user-driven validation step.
 
+Follow-up release, 2026-09-25 (Asia/Shanghai):
+
+- Product source commit and active release: `eca9a07` at `/srv/personal-agent/releases/eca9a07`.
+- Previous release `5bba2a6` remains available. The per-site Caddy configuration and its backup are unchanged.
+- `deploy/smoke.sh`: all six checks passed; production browser tests with a mocked model endpoint: 5/5 passed. `robots.txt` now allows crawlers to read the workspace pages' `noindex` directives.
+- `www` response body SHA-256 remains `cfa1d2492a430f08c6d2816a5beb5f19161cc3343271634b3095973f5f7905b6`.
+- To roll back only the application release: `ln -s /srv/personal-agent/releases/5bba2a6 /srv/personal-agent/current.rollback && mv -Tf /srv/personal-agent/current.rollback /srv/personal-agent/current && systemctl restart personal-agent`. Validate `/api/health` and rerun `deploy/smoke.sh` afterward.
+
 Do not record credentials or API keys here.
