@@ -7,12 +7,14 @@
   import MemoryList from './MemoryList.svelte';
   import TaskList from './TaskList.svelte';
   import DataSettings from './DataSettings.svelte';
+  import Conversation from './Conversation.svelte';
   import './workspace.css';
 
   export let locale: 'en' | 'zh';
   let data: AgentData | null = null;
   let tab: 'home' | 'chat' | 'profile' | 'memories' | 'tasks' | 'data' = 'home';
   let error = '';
+  let apiKey = '';
   $: zh = locale === 'zh';
   $: firstName = data?.profile.name.split(' ')[0] || '';
 
@@ -27,6 +29,7 @@
   }
 
   function cleared() { data = emptyData(); tab = 'home'; }
+  function setApiKey(value: string) { apiKey = value; }
   const tabs = [
     { id: 'home', en: 'Overview', zh: '概览', icon: '◫' },
     { id: 'chat', en: 'Conversation', zh: '对话', icon: '✳' },
@@ -57,7 +60,7 @@
         <div class="overview-grid"><button onclick={() => tab = 'chat'} class="overview-card overview-primary"><span>✳</span><h2>{zh ? '和 Agent 聊聊' : 'Talk with your agent'}</h2><p>{zh ? '带着你的背景和目标，一起思考下一步。' : 'Think through your next step with your context in mind.'}</p><b aria-hidden="true">↗</b></button><button onclick={() => tab = 'memories'} class="overview-card"><span>◇</span><h2>{zh ? '记忆' : 'Memories'}</h2><p>{zh ? `${data.memories.length} 条由你管理的记忆` : `${data.memories.length} memories you control`}</p><b aria-hidden="true">↗</b></button><button onclick={() => tab = 'tasks'} class="overview-card"><span>✓</span><h2>{zh ? '待办' : 'Tasks'}</h2><p>{zh ? `${data.tasks.filter(task => !task.completed).length} 件待完成的事` : `${data.tasks.filter(task => !task.completed).length} open tasks`}</p><b aria-hidden="true">↗</b></button></div>
         <div class="goals-panel"><p class="workspace-kicker">{zh ? '当前目标' : 'CURRENT GOALS'}</p>{#if data.profile.goals.length}{#each data.profile.goals as goal}<div class="goal-row"><span>◎</span>{goal}</div>{/each}{:else}<p class="subtle">{zh ? '在个人档案中添加目标。' : 'Add your goals in My context.'}</p>{/if}</div>
       {:else if tab === 'chat'}
-        <div class="panel"><div class="panel-heading"><div><p class="workspace-kicker">PERSONAL AI AGENT</p><h2>{zh ? '对话' : 'Conversation'}</h2></div></div><p class="empty-state">{zh ? '对话功能正在载入。' : 'Conversation is loading.'}</p></div>
+        <Conversation {locale} {data} {apiKey} onKeyChange={setApiKey} onSave={commit} />
       {:else if tab === 'profile'}
         <ProfileEditor {locale} {data} onSave={commit} />
       {:else if tab === 'memories'}
