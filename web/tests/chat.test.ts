@@ -78,4 +78,13 @@ describe('browser chat boundary', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
     vi.unstubAllGlobals();
   });
+
+  it('accepts a bounded deliverable and rejects malformed ones', async () => {
+    const valid = { text: 'Drafted', proposals: [], deliverable: { title: 'Brief', body: 'Content' } };
+    const { validateChatResult } = await import('../src/lib/chat');
+    expect(validateChatResult(valid).deliverable).toEqual(valid.deliverable);
+    expect(validateChatResult({ text: 'Fine', proposals: [] }).deliverable).toBeUndefined();
+    expect(() => validateChatResult({ ...valid, deliverable: { title: 'Brief', body: 'x'.repeat(12001) } })).toThrow(ChatError);
+    expect(() => validateChatResult({ ...valid, deliverable: { title: 'Brief', body: 'Content', secret: 'x' } })).toThrow(ChatError);
+  });
 });

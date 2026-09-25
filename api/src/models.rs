@@ -11,6 +11,15 @@ pub enum Provider {
 pub struct ChatResponse {
     pub text: String,
     pub proposals: Vec<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deliverable: Option<DeliverableOutput>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DeliverableOutput {
+    pub title: String,
+    pub body: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]

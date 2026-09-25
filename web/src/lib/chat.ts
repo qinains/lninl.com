@@ -9,7 +9,7 @@ export const providerDefaults: Record<Provider, ProviderConfig> = {
   anthropic_messages: { provider: 'anthropic_messages', apiUrl: 'https://api.anthropic.com/v1/messages', model: '' },
 };
 export interface ChatRequest extends ProviderConfig { message: string; context: unknown; conversation: { role: 'user' | 'assistant'; content: string }[] }
-export interface ChatResult { text: string; proposals: unknown[] }
+export interface ChatResult { text: string; proposals: unknown[]; deliverable?: { title: string; body: string } }
 export class ChatError extends Error { constructor(public code: string) { super(code); } }
 
 export function createChatRequest(data: AgentData, message: string, goalId?: string, config: ProviderConfig = defaultProviderConfig): ChatRequest {
@@ -49,7 +49,15 @@ export function validateChatResult(value: unknown): ChatResult {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new ChatError('malformed_response');
   const result = value as Record<string, unknown>;
   if (typeof result.text !== 'string' || !result.text.trim() || result.text.length > 20_000 || !Array.isArray(result.proposals) || result.proposals.length > 8) throw new ChatError('malformed_response');
-  return { text: result.text, proposals: result.proposals };
+  let deliverable: ChatResult['deliverable'];
+  if (result.deliverable !== undefined) {
+    const raw = result.deliverable;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ChatError('malformed_response');
+    const draft = raw as Record<string, unknown>;
+    if (Object.keys(draft).sort().join(',') !== 'body,title' || typeof draft.title !== 'string' || !draft.title.trim() || draft.title.length > 160 || typeof draft.body !== 'string' || !draft.body.trim() || draft.body.length > 12_000) throw new ChatError('malformed_response');
+    deliverable = { title: draft.title, body: draft.body };
+  }
+  return { text: result.text, proposals: result.proposals, ...(deliverable ? { deliverable } : {}) };
 }
 
 export async function sendChat(request: ChatRequest, key: string, signal?: AbortSignal): Promise<ChatResult> {

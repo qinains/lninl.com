@@ -89,3 +89,25 @@ fn parses_both_envelopes_and_rejects_malformed_text() {
     .is_err());
     assert!(parse_provider_response(Provider::OpenAiResponses, json!({"output":[]})).is_err());
 }
+
+#[test]
+fn accepts_optional_bounded_deliverable_and_keeps_legacy_replies() {
+    let valid = json!({"choices":[{"message":{"content":"{\"text\":\"Done\",\"proposals\":[],\"deliverable\":{\"title\":\"Project brief\",\"body\":\"A useful draft\"}}"}}]});
+    let result = parse_provider_response(Provider::OpenAiChatCompletions, valid).unwrap();
+    assert_eq!(result.deliverable.unwrap().title, "Project brief");
+    let old = json!({"choices":[{"message":{"content":"{\"text\":\"Done\",\"proposals\":[]}"}}]});
+    assert!(
+        parse_provider_response(Provider::OpenAiChatCompletions, old)
+            .unwrap()
+            .deliverable
+            .is_none()
+    );
+    for deliverable in [
+        json!({"title":"","body":"x"}),
+        json!({"title":"x","body":"a".repeat(12_001)}),
+        json!({"title":"x","body":"y","secret":"bad"}),
+    ] {
+        let body = json!({"choices":[{"message":{"content":json!({"text":"Done","proposals":[],"deliverable":deliverable}).to_string()}}]});
+        assert!(parse_provider_response(Provider::OpenAiChatCompletions, body).is_err());
+    }
+}

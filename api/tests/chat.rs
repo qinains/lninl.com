@@ -47,6 +47,7 @@ async fn health_and_missing_key() {
     let app = gateway(Ok(ChatResponse {
         text: "Hello".into(),
         proposals: vec![],
+        deliverable: None,
     }));
     let health = app
         .clone()
@@ -70,6 +71,7 @@ async fn rejects_oversized_body() {
     let response = gateway(Ok(ChatResponse {
         text: "Hello".into(),
         proposals: vec![],
+        deliverable: None,
     }))
     .oneshot(request(Some("sk-test"), "x".repeat(65_537)))
     .await
@@ -84,6 +86,7 @@ async fn returns_text_and_uncommitted_proposals() {
         proposals: vec![
             serde_json::json!({"id":"p1","kind":"create","taskId":"t2","title":"Draft outline"}),
         ],
+        deliverable: None,
     };
     let response = gateway(Ok(result))
         .oneshot(request(Some("sk-test-secret"), valid_body()))
