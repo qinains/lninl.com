@@ -42,4 +42,11 @@ Follow-up release, 2026-09-25 (Asia/Shanghai):
 - `www` response body SHA-256 remains `cfa1d2492a430f08c6d2816a5beb5f19161cc3343271634b3095973f5f7905b6`.
 - To roll back only the application release: `ln -s /srv/personal-agent/releases/5bba2a6 /srv/personal-agent/current.rollback && mv -Tf /srv/personal-agent/current.rollback /srv/personal-agent/current && systemctl restart personal-agent`. Validate `/api/health` and rerun `deploy/smoke.sh` afterward.
 
+Continuous-agent release, 2026-09-25 (Asia/Shanghai):
+
+- Product source commit and active release: `dfb641e` at `/srv/personal-agent/releases/dfb641e`; previous release `eca9a07` remains available for rollback.
+- Built the Rust binary on the Linux server from the release source and transferred the local Astro build. The English landing-page hash matched across transfer. No Caddy configuration change was needed.
+- After the atomic symlink switch and API restart, the health endpoint and all six smoke checks passed. Production Playwright tests passed 9/9, including bilingual goal/check-in persistence and mocked task approval. The live English/Chinese loop copy is present, and `www` still has SHA-256 `cfa1d2492a430f08c6d2816a5beb5f19161cc3343271634b3095973f5f7905b6`.
+- A real OpenAI call remains untested without a user-supplied API key. To roll back this application release, atomically repoint `/srv/personal-agent/current` to `/srv/personal-agent/releases/eca9a07`, restart `personal-agent`, and rerun `deploy/smoke.sh`.
+
 Do not record credentials or API keys here.
