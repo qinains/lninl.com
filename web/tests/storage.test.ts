@@ -11,13 +11,14 @@ const oldFixture = {
   conversation: [{ id: 'c1', role: 'user', content: 'Help me plan', createdAt: '2026-09-25T00:00:00.000Z' }],
 };
 const fixture: AgentData = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   profile: { name: 'Ada', about: 'Writer', preferences: 'Short answers' },
   goals: [{ id: 'g1', title: 'Publish weekly', domain: 'work', stage: '', status: 'active', nextReviewAt: null, createdAt: '2026-09-25T00:00:00.000Z', updatedAt: '2026-09-25T00:00:00.000Z' }],
   checkIns: [],
   memories: [{ ...oldFixture.memories[0], domain: 'other' }],
   tasks: [{ ...oldFixture.tasks[0], goalId: null }],
   conversation: oldFixture.conversation as AgentData['conversation'],
+  deliverables: [],
 };
 
 beforeEach(async () => { await clearData(); });
@@ -34,7 +35,7 @@ describe('local agent data', () => {
 
   it('migrates a version-1 record and preserves its contents', () => {
     const migrated = parseImport(JSON.stringify(oldFixture));
-    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.schemaVersion).toBe(3);
     expect(migrated.goals.map(goal => goal.title)).toEqual(['Publish weekly']);
     expect(migrated.tasks[0]).toMatchObject({ title: 'Outline article', goalId: null });
     expect(migrated.memories[0]).toMatchObject({ text: 'I write on Fridays', domain: 'other' });
@@ -57,6 +58,19 @@ describe('local agent data', () => {
     const migrated = await loadData();
     expect(migrated.goals[0].title).toBe('Publish weekly');
     expect(await loadData()).toEqual(migrated);
+  });
+
+  it('migrates version 2 without losing linked progress and validates saved deliverables', async () => {
+    const previous = { ...fixture, schemaVersion: 2 } as Record<string, unknown>;
+    delete previous.deliverables;
+    const migrated = parseImport(JSON.stringify(previous));
+    expect(migrated).toMatchObject({ schemaVersion: 3, goals: fixture.goals, tasks: fixture.tasks, deliverables: [] });
+    const withDocument: AgentData = { ...migrated, deliverables: [{ id: 'd1', goalId: 'g1', title: 'Weekly brief', body: 'Draft content', createdAt: '2026-09-25T00:00:00.000Z', updatedAt: '2026-09-25T00:00:00.000Z' }] };
+    await saveData(withDocument);
+    expect(await loadData()).toEqual(withDocument);
+    expect(parseImport(exportData(withDocument))).toEqual(withDocument);
+    expect(() => parseImport(JSON.stringify({ ...withDocument, deliverables: [{ ...withDocument.deliverables[0], goalId: 'unknown' }] }))).toThrow();
+    expect(() => parseImport(JSON.stringify({ ...withDocument, deliverables: [{ ...withDocument.deliverables[0], body: 'x'.repeat(12001) }] }))).toThrow();
   });
 
   it('rejects missing goal references and malformed check-ins', () => {

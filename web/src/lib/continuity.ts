@@ -23,3 +23,24 @@ export function addCheckIn(data: AgentData, input: CheckInInput, now = new Date(
 export function nextDueGoal(data: AgentData, today = localDate()): Goal | null {
   return data.goals.filter(goal => goal.status === 'active' && goal.nextReviewAt && goal.nextReviewAt <= today).sort((a, b) => a.nextReviewAt!.localeCompare(b.nextReviewAt!))[0] || null;
 }
+
+export interface AgendaItem { goal: Goal; reason: 'due' | 'open_task' | 'continue' }
+
+export function agenda(data: AgentData, today = localDate()): AgendaItem[] {
+  return data.goals
+    .filter(goal => goal.status === 'active')
+    .map(goal => ({
+      goal,
+      reason: goal.nextReviewAt && goal.nextReviewAt <= today ? 'due' as const
+        : data.tasks.some(task => task.goalId === goal.id && !task.completed) ? 'open_task' as const
+          : 'continue' as const,
+    }))
+    .sort((a, b) => {
+      const score = { due: 0, open_task: 1, continue: 2 };
+      return score[a.reason] - score[b.reason]
+        || (a.goal.nextReviewAt || '9999-12-31').localeCompare(b.goal.nextReviewAt || '9999-12-31')
+        || a.goal.createdAt.localeCompare(b.goal.createdAt)
+        || a.goal.id.localeCompare(b.goal.id);
+    })
+    .slice(0, 4);
+}

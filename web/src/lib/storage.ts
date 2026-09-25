@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION, type AgentData, type CheckIn, type ConversationTurn, type Domain, type Goal, type Memory, type Profile, type Task } from './domain';
+import { SCHEMA_VERSION, type AgentData, type CheckIn, type ConversationTurn, type Deliverable, type Domain, type Goal, type Memory, type Profile, type Task } from './domain';
 
 const DB_NAME = 'personal-agent';
 const STORE = 'state';
@@ -47,24 +47,30 @@ function date(value: unknown): string | null {
 
 export function migrateAgentData(value: unknown): AgentData {
   const raw = value as Record<string, unknown>;
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.schemaVersion !== 1) return validateAgentData(value);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return validateAgentData(value);
+  if (raw.schemaVersion === 2) {
+    const old = object(value, ['schemaVersion', 'profile', 'goals', 'checkIns', 'memories', 'tasks', 'conversation']);
+    return validateAgentData({ ...old, schemaVersion: 3, deliverables: [] });
+  }
+  if (raw.schemaVersion !== 1) return validateAgentData(value);
   const old = object(value, ['schemaVersion', 'profile', 'memories', 'tasks', 'conversation']);
   const p = object(old.profile, ['name', 'about', 'preferences', 'goals']);
   const goals = list(p.goals, 30, item => string(item, 500));
   const now = new Date().toISOString();
   return validateAgentData({
-    schemaVersion: 2,
+    schemaVersion: 3,
     profile: { name: p.name, about: p.about, preferences: p.preferences },
     goals: goals.map((title, index) => ({ id: `legacy-${index}`, title, domain: 'other', stage: '', status: 'active', nextReviewAt: null, createdAt: now, updatedAt: now })),
     checkIns: [],
     memories: list(old.memories, 500, item => ({ ...object(item, ['id', 'text', 'createdAt', 'updatedAt']), domain: 'other' })),
     tasks: list(old.tasks, 1000, item => ({ ...object(item, ['id', 'title', 'notes', 'completed', 'createdAt', 'updatedAt']), goalId: null })),
     conversation: old.conversation,
+    deliverables: [],
   });
 }
 
 export function validateAgentData(value: unknown): AgentData {
-  const data = object(value, ['schemaVersion', 'profile', 'goals', 'checkIns', 'memories', 'tasks', 'conversation']);
+  const data = object(value, ['schemaVersion', 'profile', 'goals', 'checkIns', 'memories', 'tasks', 'conversation', 'deliverables']);
   if (data.schemaVersion !== SCHEMA_VERSION) throw new Error('Unsupported data version');
   const p = object(data.profile, ['name', 'about', 'preferences']);
   const profile: Profile = {
@@ -104,11 +110,20 @@ export function validateAgentData(value: unknown): AgentData {
     if (c.role !== 'user' && c.role !== 'assistant') throw new Error('Invalid conversation role');
     return { id: string(c.id, 100), role: c.role, content: string(c.content, 20_000), createdAt: timestamp(c.createdAt) } satisfies ConversationTurn;
   }));
-  return { schemaVersion: SCHEMA_VERSION, profile, goals, checkIns, memories, tasks, conversation };
+  const deliverables = uniqueIds(list(data.deliverables, 100, item => {
+    const d = object(item, ['id', 'goalId', 'title', 'body', 'createdAt', 'updatedAt']);
+    const goalId = string(d.goalId, 100);
+    if (!goalIds.has(goalId)) throw new Error('Unknown deliverable goal');
+    const title = string(d.title, 160);
+    const body = string(d.body, 12_000);
+    if (!title.trim() || !body.trim()) throw new Error('Empty deliverable');
+    return { id: string(d.id, 100), goalId, title, body, createdAt: timestamp(d.createdAt), updatedAt: timestamp(d.updatedAt) } satisfies Deliverable;
+  }));
+  return { schemaVersion: SCHEMA_VERSION, profile, goals, checkIns, memories, tasks, conversation, deliverables };
 }
 
 export function emptyData(): AgentData {
-  return { schemaVersion: SCHEMA_VERSION, profile: { name: '', about: '', preferences: '' }, goals: [], checkIns: [], memories: [], tasks: [], conversation: [] };
+  return { schemaVersion: SCHEMA_VERSION, profile: { name: '', about: '', preferences: '' }, goals: [], checkIns: [], memories: [], tasks: [], conversation: [], deliverables: [] };
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -140,7 +155,7 @@ export async function loadData(): Promise<AgentData> {
   const value = await record<unknown>('readonly', store => store.get(RECORD));
   if (value === undefined) return emptyData();
   const migrated = migrateAgentData(value);
-  if ((value as AgentData).schemaVersion === 1) await saveData(migrated);
+  if ((value as AgentData).schemaVersion !== SCHEMA_VERSION) await saveData(migrated);
   return migrated;
 }
 

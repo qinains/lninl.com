@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export interface Profile { name: string; about: string; preferences: string }
 export type Domain = 'work' | 'learning' | 'life' | 'other';
@@ -7,6 +7,7 @@ export interface CheckIn { id: string; goalId: string; outcome: string; learned:
 export interface Memory { id: string; text: string; domain: Domain; createdAt: string; updatedAt: string }
 export interface Task { id: string; goalId: string | null; title: string; notes: string; completed: boolean; createdAt: string; updatedAt: string }
 export interface ConversationTurn { id: string; role: 'user' | 'assistant'; content: string; createdAt: string }
+export interface Deliverable { id: string; goalId: string; title: string; body: string; createdAt: string; updatedAt: string }
 export interface AgentData {
   schemaVersion: number;
   profile: Profile;
@@ -15,6 +16,7 @@ export interface AgentData {
   memories: Memory[];
   tasks: Task[];
   conversation: ConversationTurn[];
+  deliverables: Deliverable[];
 }
 
 export type TaskProposal =
