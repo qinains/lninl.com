@@ -1,5 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
 
+test('a goal review starter prepares a grounded draft without sending it', async ({ page }) => {
+  await page.goto('/app/');
+  await page.getByLabel('My name').fill('Ada');
+  await page.getByLabel('My goals').fill('Write weekly');
+  await page.getByRole('button', { name: 'Save profile' }).click();
+  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Conversation' }).click();
+  await page.getByRole('button', { name: 'Review Write weekly' }).click();
+  await expect(page.getByLabel('Your message')).toHaveValue(/Write weekly/);
+});
+
 async function onboard(page: Page, zh = false) {
   await page.goto(zh ? '/zh/app/' : '/app/');
   await page.getByLabel(zh ? '我的名字' : 'My name').fill('Ada');

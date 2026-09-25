@@ -7,15 +7,13 @@
   $: name = data.profile.name;
   $: about = data.profile.about;
   $: preferences = data.profile.preferences;
-  $: goals = data.profile.goals.join('\n');
   let name: string;
   let about: string;
   let preferences: string;
-  let goals: string;
 
   async function save() {
     if (!name.trim()) return;
-    await onSave({ ...data, profile: { name: name.trim(), about: about.trim(), preferences: preferences.trim(), goals: goals.split('\n').map(value => value.trim()).filter(Boolean) } });
+    await onSave({ ...data, profile: { name: name.trim(), about: about.trim(), preferences: preferences.trim() } });
   }
 </script>
 
@@ -24,7 +22,6 @@
     <label>{zh ? '我的名字' : 'My name'}<input bind:value={name} maxlength="120" required /></label>
     <label>{zh ? '关于我' : 'About me'}<textarea bind:value={about} maxlength="4000" rows="4"></textarea></label>
     <label>{zh ? '我的偏好' : 'My preferences'}<textarea bind:value={preferences} maxlength="4000" rows="3"></textarea></label>
-    <label>{zh ? '我的目标' : 'My goals'}<textarea bind:value={goals} maxlength="2000" rows="4"></textarea></label>
     <button class="ws-primary" type="submit">{zh ? '保存档案' : 'Save profile'}</button>
   </form>
 </div>

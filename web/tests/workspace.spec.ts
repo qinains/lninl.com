@@ -21,6 +21,7 @@ for (const locale of ['en', 'zh'] as const) {
     await expect(page.getByText(zh ? '我喜欢简短回答' : 'I prefer short answers')).toBeVisible();
     await page.getByRole('button', { name: zh ? '编辑记忆' : 'Edit memory' }).click();
     await page.getByLabel(zh ? '编辑记忆内容' : 'Edit memory text').fill(zh ? '我喜欢具体的回答' : 'I prefer concrete answers');
+    await page.getByLabel(zh ? '编辑记忆领域' : 'Edit memory domain').selectOption('work');
     await page.getByRole('button', { name: zh ? '保存记忆' : 'Save memory' }).click();
     await expect(page.getByText(zh ? '我喜欢具体的回答' : 'I prefer concrete answers')).toBeVisible();
 
@@ -44,4 +45,47 @@ for (const locale of ['en', 'zh'] as const) {
     await nav.getByRole('button', { name: zh ? '待办' : 'Tasks' }).click();
     await expect(page.getByRole('checkbox', { name: zh ? '写提纲' : 'Write outline' })).toBeChecked();
   });
+
+  test(`${locale} preserves a goal action and check-in across reload`, async ({ page }) => {
+    await page.goto(route);
+    await page.getByLabel(zh ? '我的名字' : 'My name').fill('Ada');
+    await page.getByRole('button', { name: zh ? '保存档案' : 'Save profile' }).click();
+    await page.getByRole('navigation', { name: zh ? '工作台导航' : 'Workspace navigation' }).getByRole('button', { name: zh ? '目标' : 'Goals' }).click();
+    await page.getByLabel(zh ? '目标名称' : 'Goal title').fill(zh ? '每周写作' : 'Write weekly');
+    await page.getByRole('button', { name: zh ? '创建目标' : 'Create goal' }).click();
+    await page.getByRole('button', { name: zh ? '编辑目标' : 'Edit goal' }).click();
+    await page.getByLabel(zh ? '编辑当前阶段' : 'Edit current stage').fill(zh ? '完成第一篇' : 'First article');
+    await page.getByRole('button', { name: zh ? '保存目标' : 'Save goal' }).click();
+    await page.getByRole('button', { name: zh ? '回顾目标' : 'Check in' }).click();
+    await page.getByLabel(zh ? '这次进展' : 'What happened').fill(zh ? '完成初稿' : 'Drafted article');
+    await page.getByLabel(zh ? '下一步行动' : 'Next action').fill(zh ? '编辑初稿' : 'Edit draft');
+    await page.getByRole('button', { name: zh ? '保存回顾' : 'Save check-in' }).click();
+    await expect(page.getByText(zh ? '完成初稿' : 'Drafted article')).toBeVisible();
+    await page.reload();
+    await expect(page.getByText(zh ? '完成第一篇' : 'First article')).toBeVisible();
+    await page.getByRole('navigation', { name: zh ? '工作台导航' : 'Workspace navigation' }).getByRole('button', { name: zh ? '目标' : 'Goals' }).click();
+    await expect(page.getByText(zh ? '编辑初稿' : 'Edit draft')).toBeVisible();
+    await expect(page.getByText(zh ? '完成初稿' : 'Drafted article')).toBeVisible();
+  });
 }
+
+test('a failed check-in save keeps the draft', async ({ page }) => {
+  await page.goto('/app/');
+  await page.getByLabel('My name').fill('Ada');
+  await page.getByRole('button', { name: 'Save profile' }).click();
+  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Goals' }).click();
+  await page.getByLabel('Goal title').fill('Write weekly');
+  await page.getByRole('button', { name: 'Create goal' }).click();
+  await page.getByRole('button', { name: 'Check in' }).click();
+  await page.getByLabel('What happened').fill('Drafted two pages');
+  await page.evaluate(() => {
+    const original = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (storeNames, mode, options) {
+      if (mode === 'readwrite') throw new Error('Storage unavailable');
+      return original.call(this, storeNames, mode, options);
+    };
+  });
+  await page.getByRole('button', { name: 'Save check-in' }).click();
+  await expect(page.getByRole('alert')).toContainText('Could not save check-in');
+  await expect(page.getByLabel('What happened')).toHaveValue('Drafted two pages');
+});

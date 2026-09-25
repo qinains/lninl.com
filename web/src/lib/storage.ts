@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION, type AgentData, type ConversationTurn, type Memory, type Profile, type Task } from './domain';
+import { SCHEMA_VERSION, type AgentData, type CheckIn, type ConversationTurn, type Domain, type Goal, type Memory, type Profile, type Task } from './domain';
 
 const DB_NAME = 'personal-agent';
 const STORE = 'state';
@@ -33,35 +33,82 @@ function uniqueIds<T extends { id: string }>(items: T[]): T[] {
   return items;
 }
 
+function domain(value: unknown): Domain {
+  if (value !== 'work' && value !== 'learning' && value !== 'life' && value !== 'other') throw new Error('Invalid domain');
+  return value;
+}
+
+function date(value: unknown): string | null {
+  if (value === null) return null;
+  const text = string(value, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || !Number.isFinite(Date.parse(`${text}T00:00:00.000Z`)) || new Date(`${text}T00:00:00.000Z`).toISOString().slice(0, 10) !== text) throw new Error('Invalid review date');
+  return text;
+}
+
+export function migrateAgentData(value: unknown): AgentData {
+  const raw = value as Record<string, unknown>;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.schemaVersion !== 1) return validateAgentData(value);
+  const old = object(value, ['schemaVersion', 'profile', 'memories', 'tasks', 'conversation']);
+  const p = object(old.profile, ['name', 'about', 'preferences', 'goals']);
+  const goals = list(p.goals, 30, item => string(item, 500));
+  const now = new Date().toISOString();
+  return validateAgentData({
+    schemaVersion: 2,
+    profile: { name: p.name, about: p.about, preferences: p.preferences },
+    goals: goals.map((title, index) => ({ id: `legacy-${index}`, title, domain: 'other', stage: '', status: 'active', nextReviewAt: null, createdAt: now, updatedAt: now })),
+    checkIns: [],
+    memories: list(old.memories, 500, item => ({ ...object(item, ['id', 'text', 'createdAt', 'updatedAt']), domain: 'other' })),
+    tasks: list(old.tasks, 1000, item => ({ ...object(item, ['id', 'title', 'notes', 'completed', 'createdAt', 'updatedAt']), goalId: null })),
+    conversation: old.conversation,
+  });
+}
+
 export function validateAgentData(value: unknown): AgentData {
-  const data = object(value, ['schemaVersion', 'profile', 'memories', 'tasks', 'conversation']);
+  const data = object(value, ['schemaVersion', 'profile', 'goals', 'checkIns', 'memories', 'tasks', 'conversation']);
   if (data.schemaVersion !== SCHEMA_VERSION) throw new Error('Unsupported data version');
-  const p = object(data.profile, ['name', 'about', 'preferences', 'goals']);
+  const p = object(data.profile, ['name', 'about', 'preferences']);
   const profile: Profile = {
     name: string(p.name, 120),
     about: string(p.about, 4000),
     preferences: string(p.preferences, 4000),
-    goals: list(p.goals, 30, item => string(item, 500)),
   };
+  const goals = uniqueIds(list(data.goals, 30, item => {
+    const g = object(item, ['id', 'title', 'domain', 'stage', 'status', 'nextReviewAt', 'createdAt', 'updatedAt']);
+    if (g.status !== 'active' && g.status !== 'paused' && g.status !== 'done') throw new Error('Invalid goal status');
+    const title = string(g.title, 500);
+    if (!title.trim()) throw new Error('Empty goal');
+    return { id: string(g.id, 100), title, domain: domain(g.domain), stage: string(g.stage, 500), status: g.status, nextReviewAt: date(g.nextReviewAt), createdAt: timestamp(g.createdAt), updatedAt: timestamp(g.updatedAt) } satisfies Goal;
+  }));
+  const goalIds = new Set(goals.map(goal => goal.id));
+  const checkIns = uniqueIds(list(data.checkIns, 1000, item => {
+    const c = object(item, ['id', 'goalId', 'outcome', 'learned', 'nextStep', 'createdAt']);
+    const goalId = string(c.goalId, 100);
+    if (!goalIds.has(goalId)) throw new Error('Unknown check-in goal');
+    const outcome = string(c.outcome, 2000);
+    if (!outcome.trim()) throw new Error('Empty check-in');
+    return { id: string(c.id, 100), goalId, outcome, learned: string(c.learned, 2000), nextStep: string(c.nextStep, 300), createdAt: timestamp(c.createdAt) } satisfies CheckIn;
+  }));
   const memories = uniqueIds(list(data.memories, 500, item => {
-    const m = object(item, ['id', 'text', 'createdAt', 'updatedAt']);
-    return { id: string(m.id, 100), text: string(m.text, 4000), createdAt: timestamp(m.createdAt), updatedAt: timestamp(m.updatedAt) } satisfies Memory;
+    const m = object(item, ['id', 'text', 'domain', 'createdAt', 'updatedAt']);
+    return { id: string(m.id, 100), text: string(m.text, 4000), domain: domain(m.domain), createdAt: timestamp(m.createdAt), updatedAt: timestamp(m.updatedAt) } satisfies Memory;
   }));
   const tasks = uniqueIds(list(data.tasks, 1000, item => {
-    const t = object(item, ['id', 'title', 'notes', 'completed', 'createdAt', 'updatedAt']);
+    const t = object(item, ['id', 'goalId', 'title', 'notes', 'completed', 'createdAt', 'updatedAt']);
     if (typeof t.completed !== 'boolean') throw new Error('Invalid task state');
-    return { id: string(t.id, 100), title: string(t.title, 300), notes: string(t.notes, 2000), completed: t.completed, createdAt: timestamp(t.createdAt), updatedAt: timestamp(t.updatedAt) } satisfies Task;
+    const goalId = t.goalId === null ? null : string(t.goalId, 100);
+    if (goalId !== null && !goalIds.has(goalId)) throw new Error('Unknown task goal');
+    return { id: string(t.id, 100), goalId, title: string(t.title, 300), notes: string(t.notes, 2000), completed: t.completed, createdAt: timestamp(t.createdAt), updatedAt: timestamp(t.updatedAt) } satisfies Task;
   }));
   const conversation = uniqueIds(list(data.conversation, 1000, item => {
     const c = object(item, ['id', 'role', 'content', 'createdAt']);
     if (c.role !== 'user' && c.role !== 'assistant') throw new Error('Invalid conversation role');
     return { id: string(c.id, 100), role: c.role, content: string(c.content, 20_000), createdAt: timestamp(c.createdAt) } satisfies ConversationTurn;
   }));
-  return { schemaVersion: SCHEMA_VERSION, profile, memories, tasks, conversation };
+  return { schemaVersion: SCHEMA_VERSION, profile, goals, checkIns, memories, tasks, conversation };
 }
 
 export function emptyData(): AgentData {
-  return { schemaVersion: SCHEMA_VERSION, profile: { name: '', about: '', preferences: '', goals: [] }, memories: [], tasks: [], conversation: [] };
+  return { schemaVersion: SCHEMA_VERSION, profile: { name: '', about: '', preferences: '' }, goals: [], checkIns: [], memories: [], tasks: [], conversation: [] };
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -91,7 +138,10 @@ async function record<T>(mode: IDBTransactionMode, work: (store: IDBObjectStore)
 
 export async function loadData(): Promise<AgentData> {
   const value = await record<unknown>('readonly', store => store.get(RECORD));
-  return value === undefined ? emptyData() : validateAgentData(value);
+  if (value === undefined) return emptyData();
+  const migrated = migrateAgentData(value);
+  if ((value as AgentData).schemaVersion === 1) await saveData(migrated);
+  return migrated;
 }
 
 export async function saveData(data: AgentData): Promise<void> {
@@ -105,7 +155,7 @@ export async function clearData(): Promise<void> {
 
 export function parseImport(text: string): AgentData {
   if (new TextEncoder().encode(text).length > MAX_IMPORT_BYTES) throw new Error('Import too large');
-  return validateAgentData(JSON.parse(text));
+  return migrateAgentData(JSON.parse(text));
 }
 
 export function exportData(data: AgentData): string {

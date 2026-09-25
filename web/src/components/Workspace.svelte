@@ -8,15 +8,18 @@
   import TaskList from './TaskList.svelte';
   import DataSettings from './DataSettings.svelte';
   import Conversation from './Conversation.svelte';
+  import GoalList from './GoalList.svelte';
+  import { nextDueGoal } from '../lib/continuity';
   import './workspace.css';
 
   export let locale: 'en' | 'zh';
   let data: AgentData | null = null;
-  let tab: 'home' | 'chat' | 'profile' | 'memories' | 'tasks' | 'data' = 'home';
+  let tab: 'home' | 'goals' | 'chat' | 'profile' | 'memories' | 'tasks' | 'data' = 'home';
   let error = '';
   let apiKey = '';
   $: zh = locale === 'zh';
   $: firstName = data?.profile.name.split(' ')[0] || '';
+  $: dueGoal = data ? nextDueGoal(data) : null;
 
   onMount(async () => {
     try { data = await loadData(); }
@@ -38,6 +41,7 @@
   function setApiKey(value: string) { apiKey = value; }
   const tabs = [
     { id: 'home', en: 'Overview', zh: '概览', icon: '◫' },
+    { id: 'goals', en: 'Goals', zh: '目标', icon: '◎' },
     { id: 'chat', en: 'Conversation', zh: '对话', icon: '✳' },
     { id: 'profile', en: 'My context', zh: '个人档案', icon: '◉' },
     { id: 'memories', en: 'Memories', zh: '记忆', icon: '◇' },
@@ -62,9 +66,12 @@
     <div class="workspace-main"><div class="workspace-topbar"><span>{zh ? '你的个人空间' : 'YOUR PERSONAL SPACE'}</span><span>{data.profile.name}</span></div>
       {#if error}<p role="alert" class="error-message">{error}</p>{/if}
       {#if tab === 'home'}
-        <div class="welcome"><p class="workspace-kicker">{zh ? '欢迎回来' : 'WELCOME BACK'}</p><h1>{zh ? `${firstName}，今天想推进什么？` : `What matters today, ${firstName}?`}</h1><p>{zh ? '你的背景、目标和下一步，都在这里。' : 'Your context, goals, and next steps are here when you need them.'}</p></div>
-        <div class="overview-grid"><button onclick={() => tab = 'chat'} class="overview-card overview-primary"><span>✳</span><h2>{zh ? '和 Agent 聊聊' : 'Talk with your agent'}</h2><p>{zh ? '带着你的背景和目标，一起思考下一步。' : 'Think through your next step with your context in mind.'}</p><b aria-hidden="true">↗</b></button><button onclick={() => tab = 'memories'} class="overview-card"><span>◇</span><h2>{zh ? '记忆' : 'Memories'}</h2><p>{zh ? `${data.memories.length} 条由你管理的记忆` : `${data.memories.length} memories you control`}</p><b aria-hidden="true">↗</b></button><button onclick={() => tab = 'tasks'} class="overview-card"><span>✓</span><h2>{zh ? '待办' : 'Tasks'}</h2><p>{zh ? `${data.tasks.filter(task => !task.completed).length} 件待完成的事` : `${data.tasks.filter(task => !task.completed).length} open tasks`}</p><b aria-hidden="true">↗</b></button></div>
-        <div class="goals-panel"><p class="workspace-kicker">{zh ? '当前目标' : 'CURRENT GOALS'}</p>{#if data.profile.goals.length}{#each data.profile.goals as goal}<div class="goal-row"><span>◎</span>{goal}</div>{/each}{:else}<p class="subtle">{zh ? '在个人档案中添加目标。' : 'Add your goals in My context.'}</p>{/if}</div>
+        <div class="welcome"><p class="workspace-kicker">{zh ? '欢迎回来' : 'WELCOME BACK'}</p><h1>{zh ? `${firstName}，今天想推进什么？` : `What matters today, ${firstName}?`}</h1><p>{zh ? '围绕你的目标，行动、回顾，再调整下一步。' : 'Act, check in, and adjust your next step around your goals.'}</p></div>
+        {#if dueGoal}<button class="due-banner" onclick={() => tab = 'goals'}>{zh ? '该回顾目标了：' : 'Time to review: '}{dueGoal.title} →</button>{/if}
+        <div class="overview-grid"><button onclick={() => tab = 'goals'} class="overview-card overview-primary"><span>◎</span><h2>{zh ? '目标与回顾' : 'Goals & check-ins'}</h2><p>{zh ? `${data.goals.filter(goal => goal.status === 'active').length} 个进行中的目标` : `${data.goals.filter(goal => goal.status === 'active').length} active goals`}</p><b aria-hidden="true">↗</b></button><button onclick={() => tab = 'chat'} class="overview-card"><span>✳</span><h2>{zh ? '和 Agent 聊聊' : 'Talk with your agent'}</h2><p>{zh ? '结合你的进展讨论下一步。' : 'Discuss the next step using your progress.'}</p><b aria-hidden="true">↗</b></button><button onclick={() => tab = 'tasks'} class="overview-card"><span>✓</span><h2>{zh ? '待办' : 'Tasks'}</h2><p>{zh ? `${data.tasks.filter(task => !task.completed).length} 件待完成的事` : `${data.tasks.filter(task => !task.completed).length} open tasks`}</p><b aria-hidden="true">↗</b></button></div>
+        <div class="goals-panel"><p class="workspace-kicker">{zh ? '持续推进' : 'KEEP MOVING'}</p>{#if data.goals.length}{#each data.goals.filter(goal => goal.status === 'active') as goal}<div class="goal-row"><span>◎</span><div><strong>{goal.title}</strong>{#if goal.stage}<small>{goal.stage}</small>{/if}{#each data.checkIns.filter(item => item.goalId === goal.id).slice(-1) as item}<small>{zh ? '最近回顾：' : 'Last check-in: '}{item.outcome}</small>{/each}</div></div>{/each}{:else}<p class="subtle">{zh ? '创建一个目标，再记录行动和回顾。' : 'Create a goal, then track actions and check-ins.'}</p>{/if}</div>
+      {:else if tab === 'goals'}
+        <GoalList {locale} {data} onSave={persist} />
       {:else if tab === 'chat'}
         <Conversation {locale} {data} {apiKey} onKeyChange={setApiKey} onSave={persist} />
       {:else if tab === 'profile'}

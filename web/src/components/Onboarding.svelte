@@ -11,7 +11,8 @@
 
   async function save() {
     if (!name.trim()) return;
-    await onSave({ ...data, profile: { name: name.trim(), about: about.trim(), preferences: preferences.trim(), goals: goals.split('\n').map(value => value.trim()).filter(Boolean) } });
+    const now = new Date().toISOString();
+    await onSave({ ...data, profile: { name: name.trim(), about: about.trim(), preferences: preferences.trim() }, goals: goals.split('\n').map(value => value.trim()).filter(Boolean).map(title => ({ id: crypto.randomUUID(), title, domain: 'other' as const, stage: '', status: 'active' as const, nextReviewAt: null, createdAt: now, updatedAt: now })) });
   }
 </script>
 

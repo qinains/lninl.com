@@ -4,7 +4,7 @@ import { applyProposal, validateProposal } from '../src/lib/proposals';
 
 const original = () => ({
   ...emptyData(),
-  tasks: [{ id: 't1', title: 'Outline', notes: '', completed: false, createdAt: '2026-09-25T00:00:00.000Z', updatedAt: '2026-09-25T00:00:00.000Z' }],
+  tasks: [{ id: 't1', goalId: null, title: 'Outline', notes: '', completed: false, createdAt: '2026-09-25T00:00:00.000Z', updatedAt: '2026-09-25T00:00:00.000Z' }],
 });
 
 describe('untrusted task proposals', () => {

@@ -15,11 +15,13 @@
   let error = '';
   let notice = '';
   let proposals: TaskProposal[] = [];
+  let selectedGoalId: string | undefined;
   $: zh = locale === 'zh';
 
   function messageFor(code: string): string {
     const messages: Record<string, [string, string]> = {
       missing_key: ['Enter your OpenAI API key first.', '请先输入 OpenAI API Key。'],
+      message_too_long: ['Your message is too long for the model gateway. Shorten it and retry.', '消息过长，请缩短后重试。'],
       invalid_key: ['Your OpenAI API key is invalid or unavailable.', 'API Key 无效或不可用。'],
       timeout: ['The model request timed out. You can retry.', '模型请求超时，可以重试。'],
       rate_limited: ['Too many requests. Please try again later.', '请求过于频繁，请稍后再试。'],
@@ -41,7 +43,7 @@
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 42_000);
     try {
-      const result = await sendChat(createChatRequest(data, prompt), apiKey, controller.signal);
+      const result = await sendChat(createChatRequest(data, prompt, selectedGoalId), apiKey, controller.signal);
       const now = new Date().toISOString();
       const turns: ConversationTurn[] = [
         { id: crypto.randomUUID(), role: 'user', content: prompt, createdAt: now },
@@ -50,6 +52,7 @@
       try { await onSave({ ...data, conversation: [...data.conversation, ...turns].slice(-1000) }); }
       catch { throw new ChatError('storage_error'); }
       draft = '';
+      selectedGoalId = undefined;
       const valid: TaskProposal[] = [];
       for (const raw of result.proposals) {
         try { valid.push(validateProposal(raw, data)); }
@@ -78,6 +81,7 @@
 </script>
 
 <div class="conversation-view"><div class="panel-heading"><div><p class="workspace-kicker">PERSONAL AI AGENT</p><h2>{zh ? '和你的 Agent 对话' : 'Talk with your agent'}</h2></div></div>
+  {#if data.goals.some(goal => goal.status === 'active')}<div class="review-starters"><small>{zh ? '围绕一个目标继续' : 'Continue with a goal'}</small>{#each data.goals.filter(goal => goal.status === 'active').slice(0, 6) as goal}<button class="ws-secondary" onclick={() => { selectedGoalId = goal.id; draft = zh ? `请根据我的目标「${goal.title}」和之前的回顾，帮我评估进展并提出下一步。` : `Review my progress on "${goal.title}" using my past check-ins and suggest a next step.`; }}>{zh ? `回顾 ${goal.title}` : `Review ${goal.title}`}</button>{/each}</div>{/if}
   <ApiKeySettings {locale} value={apiKey} onChange={onKeyChange} />
   <div class="conversation-list" aria-live="polite">{#if data.conversation.length === 0}<div class="chat-empty"><span>✳</span><h3>{zh ? '从一个问题开始。' : 'Start with a question.'}</h3><p>{zh ? '你的 Agent 会参考你提供的背景、记忆和目标。' : 'Your agent can use the context, memories, and goals you chose to share.'}</p></div>{:else}{#each data.conversation as turn (turn.id)}<article class:user-turn={turn.role === 'user'} class:assistant-turn={turn.role === 'assistant'}><span>{turn.role === 'user' ? (zh ? '你' : 'You') : 'Agent'}</span><p>{turn.content}</p></article>{/each}{/if}</div>
   {#if error}<p role="alert" class="error-message">{error}</p><button class="ws-secondary retry-button" onclick={submit}>{zh ? '重试' : 'Retry'}</button>{/if}

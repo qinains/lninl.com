@@ -45,7 +45,7 @@ export function applyProposal(data: AgentData, proposal: TaskProposal): AgentDat
   const now = new Date().toISOString();
   switch (valid.kind) {
     case 'create':
-      return { ...data, tasks: [...data.tasks, { id: valid.taskId, title: valid.title, notes: valid.notes, completed: false, createdAt: now, updatedAt: now }] };
+      return { ...data, tasks: [...data.tasks, { id: valid.taskId, goalId: null, title: valid.title, notes: valid.notes, completed: false, createdAt: now, updatedAt: now }] };
     case 'update':
       return { ...data, tasks: data.tasks.map(task => task.id === valid.taskId ? { ...task, ...(valid.title === undefined ? {} : { title: valid.title }), ...(valid.notes === undefined ? {} : { notes: valid.notes }), updatedAt: now } : task) };
     case 'complete':

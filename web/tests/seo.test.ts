@@ -25,6 +25,13 @@ describe('indexable public pages', () => {
     });
   }
 
+  it('describes the real continuous loop in both languages', () => {
+    expect(page('index.html')).toContain('Goal → action → check-in');
+    expect(page('zh/index.html')).toContain('目标 → 行动 → 回顾');
+    expect(page('guide/personal-ai-agent/index.html')).toContain('check-ins');
+    expect(page('zh/guide/personal-ai-agent/index.html')).toContain('回顾记录');
+  });
+
   for (const path of ['app/index.html', 'zh/app/index.html']) {
     it(`${path} is excluded from indexing`, () => {
       expect(page(path)).toContain('name="robots" content="noindex"');
