@@ -49,4 +49,12 @@ Continuous-agent release, 2026-09-25 (Asia/Shanghai):
 - After the atomic symlink switch and API restart, the health endpoint and all six smoke checks passed. Production Playwright tests passed 9/9, including bilingual goal/check-in persistence and mocked task approval; an additional production browser test verified version-1 data migration. The live English/Chinese loop copy is present, and `www` still has SHA-256 `cfa1d2492a430f08c6d2816a5beb5f19161cc3343271634b3095973f5f7905b6`.
 - A real OpenAI call remains untested without a user-supplied API key. To roll back this application release, atomically repoint `/srv/personal-agent/current` to `/srv/personal-agent/releases/eca9a07`, restart `personal-agent`, and rerun `deploy/smoke.sh`.
 
+Multi-provider release, 2026-09-26 (Asia/Shanghai):
+
+- Product source commit `3561196`; active release `/srv/personal-agent/releases/3561196`. Previous release `dfb641e` remains available for rollback.
+- OpenAI-compatible Responses and Chat Completions (DeepSeek example), plus Anthropic Messages, with session-only API URL/model/key settings. The gateway validates and pins public HTTPS endpoints.
+- Local verification: Astro check/build, 32 Vitest tests, 11 Playwright tests, Rust fmt/clippy/tests. Production: six smoke checks and 11/11 mocked browser tests passed. A malformed custom destination returned 400; no real provider key was supplied, so live model calls were not tested.
+- `www` response SHA-256 remained `cfa1d2492a430f08c6d2816a5beb5f19161cc3343271634b3095973f5f7905b6`.
+- To roll back only the application, atomically repoint `/srv/personal-agent/current` to `/srv/personal-agent/releases/dfb641e`, restart `personal-agent`, and rerun `deploy/smoke.sh`.
+
 Do not record credentials or API keys here.
