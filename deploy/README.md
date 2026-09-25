@@ -57,4 +57,12 @@ Multi-provider release, 2026-09-26 (Asia/Shanghai):
 - `www` response SHA-256 remained `cfa1d2492a430f08c6d2816a5beb5f19161cc3343271634b3095973f5f7905b6`.
 - To roll back only the application, atomically repoint `/srv/personal-agent/current` to `/srv/personal-agent/releases/dfb641e`, restart `personal-agent`, and rerun `deploy/smoke.sh`.
 
+Personal COO first-loop release, 2026-09-26 (Asia/Shanghai):
+
+- Product source commit `fca0055`; active release `/srv/personal-agent/releases/fca0055`. Previous release `3561196` remains available for rollback.
+- A shared work/life agenda starts goal-linked draft briefs or plans. Deliverables are editable, saved only after approval in browser IndexedDB, exported with user data, and included as bounded context in later goal conversations. Schema v3 migrates v1/v2 data.
+- Local verification: Astro check/build, 36 Vitest tests, 13 Playwright tests, Rust fmt/clippy/tests. Production: six smoke checks and 13/13 mocked browser tests passed. The `www` response SHA-256 remained `cfa1d2492a430f08c6d2816a5beb5f19161cc3343271634b3095973f5f7905b6`.
+- The release does not run unattended jobs or connect external accounts. Real provider generation was not exercised without a user-supplied key.
+- To roll back only the application, atomically repoint `/srv/personal-agent/current` to `/srv/personal-agent/releases/3561196`, restart `personal-agent`, and rerun `deploy/smoke.sh`.
+
 Do not record credentials or API keys here.
