@@ -10,6 +10,7 @@ describe('browser chat boundary', () => {
     const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
       expect(init.headers).toMatchObject({ authorization: 'Bearer sk-test-secret' });
       expect(JSON.stringify(init.body)).not.toContain('sk-test-secret');
+      expect(JSON.parse(init.body as string)).toMatchObject({ provider: 'openai_responses', apiUrl: 'https://api.openai.com/v1/responses', model: 'gpt-5-mini' });
       return new Response(JSON.stringify({ text: 'Start with an outline.', proposals: [] }), { status: 200 });
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -63,5 +64,18 @@ describe('browser chat boundary', () => {
 
   it('rejects a UTF-8 message the gateway cannot accept', () => {
     expect(() => createChatRequest(emptyData(), '中'.repeat(1400))).toThrow(ChatError);
+  });
+
+  it('sends a custom Chat Completions endpoint and model without persisting its key', async () => {
+    const config = { provider: 'openai_chat_completions' as const, apiUrl: 'https://api.deepseek.com/chat/completions', model: 'deepseek-flash' };
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
+      expect(JSON.parse(init.body as string)).toMatchObject(config);
+      expect(init.headers).toMatchObject({ authorization: 'Bearer deepseek-secret' });
+      return new Response(JSON.stringify({ text: 'Next', proposals: [] }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    await sendChat(createChatRequest(emptyData(), 'Plan', undefined, config), 'deepseek-secret');
+    expect(fetchMock).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
   });
 });

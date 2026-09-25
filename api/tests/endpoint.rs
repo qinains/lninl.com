@@ -10,6 +10,11 @@ fn accepts_public_https_endpoints() {
     )
     .is_ok());
     assert!(parse_endpoint_url(
+        Provider::OpenAiChatCompletions,
+        "https://api.deepseek.com/chat/completions"
+    )
+    .is_ok());
+    assert!(parse_endpoint_url(
         Provider::AnthropicMessages,
         "https://api.anthropic.com/v1/messages"
     )

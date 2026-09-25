@@ -23,12 +23,17 @@ fn accepts_bounded_chat_with_recent_turns() {
 }
 
 #[test]
-fn accepts_user_selected_responses_and_anthropic() {
+fn accepts_user_selected_protocols() {
     for (provider, url, expected) in [
         (
             "openai_responses",
             "https://gateway.example.com/v1/responses",
             Provider::OpenAiResponses,
+        ),
+        (
+            "openai_chat_completions",
+            "https://api.deepseek.com/chat/completions",
+            Provider::OpenAiChatCompletions,
         ),
         (
             "anthropic_messages",

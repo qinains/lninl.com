@@ -10,6 +10,7 @@
   import Conversation from './Conversation.svelte';
   import GoalList from './GoalList.svelte';
   import { nextDueGoal } from '../lib/continuity';
+  import { defaultProviderConfig, providerDefaults, type Provider, type ProviderConfig } from '../lib/chat';
   import './workspace.css';
 
   export let locale: 'en' | 'zh';
@@ -17,6 +18,7 @@
   let tab: 'home' | 'goals' | 'chat' | 'profile' | 'memories' | 'tasks' | 'data' = 'home';
   let error = '';
   let apiKey = '';
+  let providerConfig: ProviderConfig = { ...defaultProviderConfig };
   $: zh = locale === 'zh';
   $: firstName = data?.profile.name.split(' ')[0] || '';
   $: dueGoal = data ? nextDueGoal(data) : null;
@@ -39,6 +41,9 @@
 
   function cleared() { data = emptyData(); tab = 'home'; }
   function setApiKey(value: string) { apiKey = value; }
+  function setProvider(provider: Provider) { providerConfig = { ...providerDefaults[provider] }; apiKey = ''; }
+  function setApiUrl(apiUrl: string) { providerConfig = { ...providerConfig, apiUrl }; apiKey = ''; }
+  function setModel(model: string) { providerConfig = { ...providerConfig, model }; }
   const tabs = [
     { id: 'home', en: 'Overview', zh: '概览', icon: '◫' },
     { id: 'goals', en: 'Goals', zh: '目标', icon: '◎' },
@@ -73,7 +78,7 @@
       {:else if tab === 'goals'}
         <GoalList {locale} {data} onSave={persist} />
       {:else if tab === 'chat'}
-        <Conversation {locale} {data} {apiKey} onKeyChange={setApiKey} onSave={persist} />
+        <Conversation {locale} {data} {apiKey} {providerConfig} onKeyChange={setApiKey} onProviderChange={setProvider} onUrlChange={setApiUrl} onModelChange={setModel} onSave={persist} />
       {:else if tab === 'profile'}
         <ProfileEditor {locale} {data} onSave={commit} />
       {:else if tab === 'memories'}

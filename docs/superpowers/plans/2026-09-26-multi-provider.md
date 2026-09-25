@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship user-configurable OpenAI-compatible Responses and Anthropic Messages conversations without weakening the key or gateway boundary.
+**Goal:** Ship user-configurable OpenAI-compatible Responses and Chat Completions (including DeepSeek), and Anthropic Messages conversations without weakening the key or gateway boundary.
 
 **Architecture:** Add provider configuration to the browser chat request, validate it in Axum, dispatch through provider-specific request/response adapters, and pin an approved HTTPS public endpoint per request. Preserve old request defaults for deployment transition.
 
@@ -42,10 +42,10 @@
 
 **Files:** Modify `api/src/upstream.rs`, `api/src/main.rs`; create `api/tests/upstream.rs` or unit tests in `upstream.rs`.
 
-**Interfaces:** `HttpUpstream` implements existing `Upstream`; pure `build_payload(chat)` and `parse_provider_response(provider, json)` cover both modes.
+**Interfaces:** `HttpUpstream` implements existing `Upstream`; pure `build_payload(chat)` and `parse_provider_response(provider, json)` cover all three modes.
 
-- [ ] Write failing adapter tests for Responses and Anthropic request bodies, parsed task proposals, non-JSON/missing text, and error mapping.
-- [ ] Implement two provider adapters with a shared bounded parser. Use validated DNS-pinned HTTPS client, no redirects/proxy, and no upstream body logging.
+- [ ] Write failing adapter tests for Responses, Chat Completions, and Anthropic request bodies, parsed task proposals, non-JSON/missing text, and error mapping.
+- [ ] Implement three provider adapters with a shared bounded parser. Use validated DNS-pinned HTTPS client, no redirects/proxy, and no upstream body logging.
 - [ ] Run the full Rust checks and tests; commit `feat: support Responses and Anthropic messages`.
 
 ### Task 3: Browser provider settings
@@ -54,7 +54,7 @@
 
 **Interfaces:** `ProviderSettings { provider, apiUrl, model }`; `sendChat(request, key)` includes settings; `Conversation` receives current settings and a change callback; key clears on URL/provider changes.
 
-- [ ] Add failing Vitest/Playwright tests for payload, two modes, URL/model inputs, key clearing, and reload.
+- [ ] Add failing Vitest/Playwright tests for payload, three modes, URL/model inputs, key clearing, and reload.
 - [ ] Implement controlled bilingual settings and error handling. Keep fields in page memory, with full-endpoint examples.
 - [ ] Run `pnpm check && pnpm build && pnpm test --run && pnpm exec playwright test`; commit `feat: configure model provider per session`.
 

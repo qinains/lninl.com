@@ -1,10 +1,18 @@
 import type { AgentData } from './domain';
 
-export interface ChatRequest { message: string; context: unknown; conversation: { role: 'user' | 'assistant'; content: string }[] }
+export type Provider = 'openai_responses' | 'openai_chat_completions' | 'anthropic_messages';
+export interface ProviderConfig { provider: Provider; apiUrl: string; model: string }
+export const defaultProviderConfig: ProviderConfig = { provider: 'openai_responses', apiUrl: 'https://api.openai.com/v1/responses', model: 'gpt-5-mini' };
+export const providerDefaults: Record<Provider, ProviderConfig> = {
+  openai_responses: defaultProviderConfig,
+  openai_chat_completions: { provider: 'openai_chat_completions', apiUrl: 'https://api.deepseek.com/chat/completions', model: 'deepseek-flash' },
+  anthropic_messages: { provider: 'anthropic_messages', apiUrl: 'https://api.anthropic.com/v1/messages', model: '' },
+};
+export interface ChatRequest extends ProviderConfig { message: string; context: unknown; conversation: { role: 'user' | 'assistant'; content: string }[] }
 export interface ChatResult { text: string; proposals: unknown[] }
 export class ChatError extends Error { constructor(public code: string) { super(code); } }
 
-export function createChatRequest(data: AgentData, message: string, goalId?: string): ChatRequest {
+export function createChatRequest(data: AgentData, message: string, goalId?: string, config: ProviderConfig = defaultProviderConfig): ChatRequest {
   const cleanMessage = message.trim();
   if (!cleanMessage || new TextEncoder().encode(cleanMessage).length > 4000) throw new ChatError('message_too_long');
   const selectedGoal = data.goals.find(goal => goal.id === goalId);
@@ -30,6 +38,7 @@ export function createChatRequest(data: AgentData, message: string, goalId?: str
     else { context.profile.about = context.profile.about.slice(0, 500); context.profile.preferences = context.profile.preferences.slice(0, 500); break; }
   }
   return {
+    ...config,
     message: cleanMessage,
     context,
     conversation: data.conversation.slice(-8).map(turn => ({ role: turn.role, content: turn.content.slice(0, 800) })),
@@ -45,6 +54,10 @@ export function validateChatResult(value: unknown): ChatResult {
 
 export async function sendChat(request: ChatRequest, key: string, signal?: AbortSignal): Promise<ChatResult> {
   if (!key.trim()) throw new ChatError('missing_key');
+  let url: URL;
+  try { url = new URL(request.apiUrl); } catch { throw new ChatError('invalid_config'); }
+  const suffix = { openai_responses: '/responses', openai_chat_completions: '/chat/completions', anthropic_messages: '/messages' }[request.provider];
+  if (!suffix || url.protocol !== 'https:' || !url.pathname.endsWith(suffix) || !request.model.trim()) throw new ChatError('invalid_config');
   let response: Response;
   try {
     response = await fetch('/api/chat', {
@@ -59,6 +72,7 @@ export async function sendChat(request: ChatRequest, key: string, signal?: Abort
     if (response.status === 401) throw new ChatError('invalid_key');
     if (response.status === 504) throw new ChatError('timeout');
     if (response.status === 429) throw new ChatError('rate_limited');
+    if (response.status === 400) throw new ChatError('invalid_config');
     throw new ChatError('server_error');
   }
   try { return validateChatResult(await response.json()); }

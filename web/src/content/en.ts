@@ -18,7 +18,7 @@ export const en = {
   action: 'Actions need your approval',
   actionText: 'The agent can suggest task changes. Nothing is applied until you confirm the exact change.',
   privacy: 'Your context stays yours.',
-  privacyText: 'Your profile, goals, check-ins, memories, tasks, and conversations live in this browser. Your API key is used only during the current page session. Model requests send selected context to OpenAI through our Rust gateway; the gateway does not store your data or key.',
+  privacyText: 'Your profile, goals, check-ins, memories, tasks, and conversations live in this browser. Your API key is used only during the current page session. Model requests send selected context to your chosen API endpoint through our Rust gateway; the gateway does not store your data or key. Check your provider’s data policy separately.',
   useCasesTitle: 'A useful place to begin',
   useCases: [
     ['Keep a goal moving', 'Record its stage, next action, and a date to check in. A due review is shown when you open the workspace.'],
@@ -30,7 +30,7 @@ export const en = {
     ['What is a Personal AI Agent?', 'An AI assistant organized around one person: their context, evolving goals, recorded outcomes, and approved actions.'],
     ['Is this just another chatbot?', 'No. A goal, action, and check-in loop gives later conversations a record of what happened, not only what you asked.'],
     ['Do I need an account?', 'No. Your data stays in this browser. Export it before changing devices or clearing browser storage. There is no automatic sync.'],
-    ['Which model does it use?', 'Bring your own OpenAI API key. The key is not stored, so you will enter it again after a refresh.'],
+    ['Which model does it use?', 'Choose an OpenAI-compatible Responses or Chat Completions endpoint (including DeepSeek), or Anthropic Messages. Enter its full API URL, model ID, and your own API key. These settings are not stored.'],
   ],
   guideTitle: 'What is a Personal AI Agent?',
   guideLead: 'A personal AI agent uses the context and outcomes you choose to record to help you keep moving toward a goal, within clear boundaries.',

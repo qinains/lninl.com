@@ -20,14 +20,14 @@ async function onboard(page: Page, zh = false) {
 test('invalid key is localized and is forgotten on reload', async ({ page }) => {
   await onboard(page, true);
   await page.route('**/api/chat', route => route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"invalid_key"}' }));
-  await page.getByLabel('OpenAI API Key').fill('sk-test-secret');
+  await page.getByLabel('API Key', { exact: true }).fill('sk-test-secret');
   await page.getByLabel('你的消息').fill('你好');
   await page.getByRole('button', { name: '发送' }).click();
   await expect(page.getByRole('alert')).toContainText('API Key 无效');
   await expect(page.getByText('sk-test-secret')).toHaveCount(0);
   await page.reload();
   await page.getByRole('navigation', { name: '工作台导航' }).getByRole('button', { name: '对话' }).click();
-  await expect(page.getByLabel('OpenAI API Key')).toHaveValue('');
+  await expect(page.getByLabel('API Key', { exact: true })).toHaveValue('');
 });
 
 test('timeout retries and proposals require approval', async ({ page }) => {
@@ -40,7 +40,7 @@ test('timeout retries and proposals require approval', async ({ page }) => {
     if (calls === 3) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ text: 'Another suggestion.', proposals: [{ id: 'p2', kind: 'create', taskId: 't3', title: 'Write draft' }] }) });
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ text: 'Here is advice.', proposals: [{ kind: 'delete', taskId: 'missing' }] }) });
   });
-  await page.getByLabel('OpenAI API Key').fill('sk-test-secret');
+  await page.getByLabel('API Key', { exact: true }).fill('sk-test-secret');
   await page.getByLabel('Your message').fill('Help me plan');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('alert')).toContainText('timed out');
@@ -62,7 +62,7 @@ test('timeout retries and proposals require approval', async ({ page }) => {
   await page.reload();
   await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Conversation' }).click();
   await expect(page.getByText('Here is advice.')).toBeVisible();
-  await expect(page.getByLabel('OpenAI API Key')).toHaveValue('');
+  await expect(page.getByLabel('API Key', { exact: true })).toHaveValue('');
 });
 
 test('a local storage failure keeps the unsaved message for retry', async ({ page }) => {
@@ -71,9 +71,49 @@ test('a local storage failure keeps the unsaved message for retry', async ({ pag
   await page.evaluate(() => {
     IDBObjectStore.prototype.put = function () { throw new DOMException('Storage full', 'QuotaExceededError'); };
   });
-  await page.getByLabel('OpenAI API Key').fill('sk-test-secret');
+  await page.getByLabel('API Key', { exact: true }).fill('sk-test-secret');
   await page.getByLabel('Your message').fill('Help me plan');
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.getByRole('alert').first()).toContainText(/save/i);
   await expect(page.getByLabel('Your message')).toHaveValue('Help me plan');
+});
+
+test('custom providers send configured protocol and clear key when destination changes', async ({ page }) => {
+  await onboard(page);
+  const requests: Record<string, unknown>[] = [];
+  await page.route('**/api/chat', async route => {
+    requests.push(route.request().postDataJSON());
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{"text":"Next step","proposals":[]}' });
+  });
+  const protocol = page.getByLabel('API protocol');
+  const url = page.getByLabel('API URL (full endpoint)');
+  const model = page.getByLabel('Model ID');
+  const key = page.getByLabel('API Key', { exact: true });
+  await key.fill('openai-key');
+  await protocol.selectOption('openai_chat_completions');
+  await expect(key).toHaveValue('');
+  await expect(url).toHaveValue('https://api.deepseek.com/chat/completions');
+  await expect(model).toHaveValue('deepseek-flash');
+  await key.fill('deepseek-key');
+  await url.fill('https://gateway.example.com/v1/chat/completions');
+  await expect(key).toHaveValue('');
+  await key.fill('gateway-key');
+  await model.fill('my-model');
+  await page.getByLabel('Your message').fill('Help');
+  await page.getByRole('button', { name: 'Send' }).click();
+  await expect(page.getByText('Next step')).toBeVisible();
+  expect(requests[0]).toMatchObject({ provider: 'openai_chat_completions', apiUrl: 'https://gateway.example.com/v1/chat/completions', model: 'my-model' });
+  await protocol.selectOption('anthropic_messages');
+  await expect(key).toHaveValue('');
+  await expect(model).toHaveValue('');
+  await model.fill('claude-model');
+  await key.fill('anthropic-key');
+  await page.getByLabel('Your message').fill('Again');
+  await page.getByRole('button', { name: 'Send' }).click();
+  await expect.poll(() => requests.length).toBe(2);
+  expect(requests[1]).toMatchObject({ provider: 'anthropic_messages', apiUrl: 'https://api.anthropic.com/v1/messages', model: 'claude-model' });
+  await page.reload();
+  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Conversation' }).click();
+  await expect(protocol).toHaveValue('openai_responses');
+  await expect(key).toHaveValue('');
 });

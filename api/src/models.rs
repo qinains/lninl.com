@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Provider {
     OpenAiResponses,
+    OpenAiChatCompletions,
     AnthropicMessages,
 }
 

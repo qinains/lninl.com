@@ -27,6 +27,7 @@ pub fn validate_chat(value: Value) -> Result<ValidatedChat, &'static str> {
     } else {
         let provider = match object.get("provider").and_then(Value::as_str) {
             Some("openai_responses") => Provider::OpenAiResponses,
+            Some("openai_chat_completions") => Provider::OpenAiChatCompletions,
             Some("anthropic_messages") => Provider::AnthropicMessages,
             _ => return Err("Invalid provider"),
         };

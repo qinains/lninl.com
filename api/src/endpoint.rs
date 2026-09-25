@@ -30,6 +30,7 @@ pub fn parse_endpoint_url(provider: Provider, raw: &str) -> Result<Url, &'static
     }
     let suffix = match provider {
         Provider::OpenAiResponses => "/responses",
+        Provider::OpenAiChatCompletions => "/chat/completions",
         Provider::AnthropicMessages => "/messages",
     };
     if !url.path().ends_with(suffix) {
