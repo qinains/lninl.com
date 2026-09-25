@@ -95,6 +95,7 @@ test('migrates a version-1 browser profile without losing its tasks', async ({ p
   await page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('personal-agent', 1);
+      request.onupgradeneeded = () => { request.result.createObjectStore('state'); };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
