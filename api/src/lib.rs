@@ -14,6 +14,7 @@ use std::{
 };
 use tokio::sync::Semaphore;
 
+pub mod endpoint;
 pub mod models;
 pub mod upstream;
 pub mod validation;
