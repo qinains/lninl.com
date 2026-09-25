@@ -2,7 +2,7 @@ export const en = {
   locale: 'en',
   title: 'Personal AI Agent | lninl',
   hero: 'An AI agent that moves with you.',
-  intro: 'Give your agent the context that matters, track a goal, and check in on what changed. Use each outcome to choose a better next step, with every task change under your control.',
+  intro: 'Give your agent the context that matters. Keep work and life goals moving, prepare editable work products, and use each check-in to choose a better next step. You approve what is saved or changed.',
   loopLabel: 'Goal → action → check-in → next step',
   eyebrow: 'PERSONAL AI, ON YOUR TERMS',
   cta: 'Create your agent',
@@ -18,12 +18,12 @@ export const en = {
   action: 'Actions need your approval',
   actionText: 'The agent can suggest task changes. Nothing is applied until you confirm the exact change.',
   privacy: 'Your context stays yours.',
-  privacyText: 'Your profile, goals, check-ins, memories, tasks, and conversations live in this browser. Your API key is used only during the current page session. Model requests send selected context to your chosen API endpoint through our Rust gateway; the gateway does not store your data or key. Check your provider’s data policy separately.',
+  privacyText: 'Your profile, goals, check-ins, deliverables, memories, tasks, and conversations live in this browser. Your API key is used only during the current page session. Model requests send selected context to your chosen API endpoint through our Rust gateway; the gateway does not store your data or key. Check your provider’s data policy separately.',
   useCasesTitle: 'A useful place to begin',
   useCases: [
-    ['Keep a goal moving', 'Record its stage, next action, and a date to check in. A due review is shown when you open the workspace.'],
+    ['Keep work and life moving', 'A shared agenda surfaces active goals, due reviews, and linked open actions when you open the workspace.'],
     ['Learn from what happened', 'Save check-ins and use their outcomes to inform later conversations. You decide what becomes a memory or task.'],
-    ['Stay in control', 'Review proposed actions before they touch your task list.'],
+    ['Prepare a real work product', 'Ask for an editable brief or plan tied to a goal. Review it before saving; approve task changes separately.'],
   ],
   faqTitle: 'Questions, answered',
   faqs: [
@@ -35,7 +35,7 @@ export const en = {
   guideTitle: 'What is a Personal AI Agent?',
   guideLead: 'A personal AI agent uses the context and outcomes you choose to record to help you keep moving toward a goal, within clear boundaries.',
   guideSections: [
-    ['From goal to next step', 'Set a goal and its current stage, take an action, then record what happened. Later conversations can use recent check-ins to help reassess the next step rather than restart from a blank prompt.'],
+    ['From goal to next step', 'Set a goal and its current stage, prepare a draft plan or brief, then record what happened. Later conversations can use recent check-ins and saved drafts rather than restart from a blank prompt.'],
     ['Across your contexts', 'Label goals and memories as work, learning, life, or other. The agent may draw on selected context across domains, but it does not autonomously collect activity from other apps.'],
     ['Memory should be legible', 'Useful personalization requires control. In lninl, you can see and edit every saved memory; the agent does not silently write new memories from your conversations.'],
     ['Action without surprise', 'The agent can propose changes to your task list. You see the proposed change before approving it. It cannot send email, operate your accounts, or execute arbitrary commands.'],

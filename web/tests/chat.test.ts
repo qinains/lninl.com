@@ -51,6 +51,18 @@ describe('browser chat boundary', () => {
     expect(JSON.stringify(context).length).toBeLessThan(24_000);
   });
 
+  it('carries a bounded prior work product into the selected goal context', () => {
+    const data = emptyData();
+    const at = '2026-09-25T00:00:00.000Z';
+    data.goals.push({ id: 'work', title: 'Ship', domain: 'work', stage: '', status: 'active', nextReviewAt: null, createdAt: at, updatedAt: at });
+    data.goals.push({ id: 'life', title: 'Move', domain: 'life', stage: '', status: 'active', nextReviewAt: null, createdAt: at, updatedAt: at });
+    data.deliverables.push({ id: 'd1', goalId: 'work', title: 'Launch brief', body: 'Important prior decision', createdAt: at, updatedAt: at });
+    data.deliverables.push({ id: 'd2', goalId: 'life', title: 'Private trip', body: 'Unrelated personal detail', createdAt: at, updatedAt: at });
+    const context = JSON.stringify(createChatRequest(data, 'Continue', 'work').context);
+    expect(context).toContain('Important prior decision');
+    expect(context).not.toContain('Unrelated personal detail');
+  });
+
   it('stays below gateway limit with maximum-length local data', () => {
     const data = emptyData();
     const at = '2026-09-25T00:00:00.000Z';
@@ -59,6 +71,7 @@ describe('browser chat boundary', () => {
     data.memories = Array.from({ length: 500 }, (_, index) => ({ id: `memory-${index}`, text: 'm'.repeat(4000), domain: 'other', createdAt: at, updatedAt: at }));
     data.tasks = Array.from({ length: 1000 }, (_, index) => ({ id: `task-${index}`, goalId: null, title: 't'.repeat(300), notes: '', completed: false, createdAt: at, updatedAt: at }));
     data.checkIns = Array.from({ length: 1000 }, (_, index) => ({ id: `check-${index}`, goalId: 'goal-0', outcome: 'o'.repeat(2000), learned: 'l'.repeat(2000), nextStep: 'n'.repeat(300), createdAt: at }));
+    data.deliverables = Array.from({ length: 100 }, (_, index) => ({ id: `draft-${index}`, goalId: 'goal-0', title: '大'.repeat(160), body: '文'.repeat(12000), createdAt: at, updatedAt: at }));
     expect(new TextEncoder().encode(JSON.stringify(createChatRequest(data, 'Review', 'goal-0').context)).length).toBeLessThan(24_000);
   });
 
@@ -84,6 +97,7 @@ describe('browser chat boundary', () => {
     const { validateChatResult } = await import('../src/lib/chat');
     expect(validateChatResult(valid).deliverable).toEqual(valid.deliverable);
     expect(validateChatResult({ text: 'Fine', proposals: [] }).deliverable).toBeUndefined();
+    expect(validateChatResult({ text: 'Fine', proposals: [], deliverable: null }).deliverable).toBeUndefined();
     expect(() => validateChatResult({ ...valid, deliverable: { title: 'Brief', body: 'x'.repeat(12001) } })).toThrow(ChatError);
     expect(() => validateChatResult({ ...valid, deliverable: { title: 'Brief', body: 'Content', secret: 'x' } })).toThrow(ChatError);
   });

@@ -135,6 +135,7 @@ pub fn parse_provider_response(
         .ok_or(UpstreamError::Malformed)?;
     let deliverable = envelope
         .get("deliverable")
+        .filter(|value| !value.is_null())
         .map(|value| {
             let draft: DeliverableOutput =
                 serde_json::from_value(value.clone()).map_err(|_| UpstreamError::Malformed)?;

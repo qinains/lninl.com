@@ -102,6 +102,13 @@ fn accepts_optional_bounded_deliverable_and_keeps_legacy_replies() {
             .deliverable
             .is_none()
     );
+    let no_draft = json!({"choices":[{"message":{"content":"{\"text\":\"Done\",\"proposals\":[],\"deliverable\":null}"}}]});
+    assert!(
+        parse_provider_response(Provider::OpenAiChatCompletions, no_draft)
+            .unwrap()
+            .deliverable
+            .is_none()
+    );
     for deliverable in [
         json!({"title":"","body":"x"}),
         json!({"title":"x","body":"a".repeat(12_001)}),

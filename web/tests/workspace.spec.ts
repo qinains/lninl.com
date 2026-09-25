@@ -11,9 +11,9 @@ for (const locale of ['en', 'zh'] as const) {
     await page.getByLabel(zh ? '我的名字' : 'My name').fill('Ada');
     await page.getByLabel(zh ? '我的目标' : 'My goals').fill(zh ? '每周写一篇文章' : 'Write one article each week');
     await page.getByRole('button', { name: zh ? '保存档案' : 'Save profile' }).click();
-    await expect(page.getByText(zh ? '每周写一篇文章' : 'Write one article each week')).toBeVisible();
+    await expect(page.getByRole('region', { name: zh ? '待推进事项' : 'Progress agenda' }).getByRole('heading', { name: zh ? '每周写一篇文章' : 'Write one article each week' })).toBeVisible();
     await page.reload();
-    await expect(page.getByText(zh ? '每周写一篇文章' : 'Write one article each week')).toBeVisible();
+    await expect(page.getByRole('region', { name: zh ? '待推进事项' : 'Progress agenda' }).getByRole('heading', { name: zh ? '每周写一篇文章' : 'Write one article each week' })).toBeVisible();
 
     await nav.getByRole('button', { name: zh ? '记忆' : 'Memories' }).click();
     await page.getByLabel(zh ? '新记忆' : 'New memory').fill(zh ? '我喜欢简短回答' : 'I prefer short answers');
@@ -62,7 +62,7 @@ for (const locale of ['en', 'zh'] as const) {
     await page.getByRole('button', { name: zh ? '保存回顾' : 'Save check-in' }).click();
     await expect(page.getByText(zh ? '完成初稿' : 'Drafted article')).toBeVisible();
     await page.reload();
-    await expect(page.getByText(zh ? '完成第一篇' : 'First article')).toBeVisible();
+    await expect(page.getByRole('region', { name: zh ? '待推进事项' : 'Progress agenda' }).getByText(zh ? '完成第一篇' : 'First article')).toBeVisible();
     await page.getByRole('navigation', { name: zh ? '工作台导航' : 'Workspace navigation' }).getByRole('button', { name: zh ? '目标' : 'Goals' }).click();
     await expect(page.getByText(zh ? '编辑初稿' : 'Edit draft')).toBeVisible();
     await expect(page.getByText(zh ? '完成初稿' : 'Drafted article')).toBeVisible();
@@ -114,7 +114,7 @@ test('migrates a version-1 browser profile without losing its tasks', async ({ p
     db.close();
   });
   await page.reload();
-  await expect(page.getByText('Publish weekly')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Progress agenda' }).getByRole('heading', { name: 'Publish weekly' })).toBeVisible();
   await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Tasks' }).click();
   await expect(page.getByRole('checkbox', { name: 'Keep old task' })).toBeVisible();
 });

@@ -28,11 +28,13 @@ export function createChatRequest(data: AgentData, message: string, goalId?: str
     checkIns: recentCheckIns.map(item => ({ goalId: item.goalId, outcome: item.outcome.slice(0, 400), learned: item.learned.slice(0, 200), nextStep: item.nextStep.slice(0, 120), date: item.createdAt.slice(0, 10) })),
     memories: data.memories.slice(-15).map(memory => ({ id: memory.id, domain: memory.domain, text: memory.text.slice(0, 280) })),
     tasks: data.tasks.filter(task => !task.completed).slice(-15).map(task => ({ id: task.id, goalId: task.goalId, title: task.title.slice(0, 160) })),
+    deliverables: data.deliverables.filter(item => !selectedGoal || item.goalId === selectedGoal.id).slice(-5).map(item => ({ goalId: item.goalId, title: item.title.slice(0, 160), draftExcerpt: item.body.slice(0, 1000), updatedAt: item.updatedAt.slice(0, 10) })),
   };
   const bytes = () => new TextEncoder().encode(JSON.stringify(context)).length;
   while (bytes() > 22_000) {
     if (context.memories.length > 4) context.memories.shift();
     else if (context.tasks.length > 4) context.tasks.shift();
+    else if (context.deliverables.length > 1) context.deliverables.shift();
     else if (context.profile.goals.length > 1) context.profile.goals.pop();
     else if (context.checkIns.length > 2) context.checkIns.shift();
     else { context.profile.about = context.profile.about.slice(0, 500); context.profile.preferences = context.profile.preferences.slice(0, 500); break; }
@@ -50,7 +52,7 @@ export function validateChatResult(value: unknown): ChatResult {
   const result = value as Record<string, unknown>;
   if (typeof result.text !== 'string' || !result.text.trim() || result.text.length > 20_000 || !Array.isArray(result.proposals) || result.proposals.length > 8) throw new ChatError('malformed_response');
   let deliverable: ChatResult['deliverable'];
-  if (result.deliverable !== undefined) {
+  if (result.deliverable !== undefined && result.deliverable !== null) {
     const raw = result.deliverable;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ChatError('malformed_response');
     const draft = raw as Record<string, unknown>;
