@@ -89,3 +89,31 @@ test('a failed check-in save keeps the draft', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('Could not save check-in');
   await expect(page.getByLabel('What happened')).toHaveValue('Drafted two pages');
 });
+
+test('migrates a version-1 browser profile without losing its tasks', async ({ page }) => {
+  await page.goto('/app/');
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('personal-agent', 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('state', 'readwrite');
+      tx.objectStore('state').put({
+        schemaVersion: 1,
+        profile: { name: 'Legacy Ada', about: 'Writer', preferences: 'Concise', goals: ['Publish weekly'] },
+        memories: [],
+        tasks: [{ id: 'legacy-task', title: 'Keep old task', notes: '', completed: false, createdAt: '2026-09-25T00:00:00.000Z', updatedAt: '2026-09-25T00:00:00.000Z' }],
+        conversation: [],
+      }, 'agent');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  });
+  await page.reload();
+  await expect(page.getByText('Publish weekly')).toBeVisible();
+  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('button', { name: 'Tasks' }).click();
+  await expect(page.getByRole('checkbox', { name: 'Keep old task' })).toBeVisible();
+});
